@@ -45,18 +45,11 @@
     }
     .logo span { color: var(--blue); }
 
-    .nav-logo {
+    #logo-canvas {
       display: block;
       width: 180px;
-      height: auto;
-      background: none;
-      border: none;
-      outline: none;
+      height: 80px;
       padding: 4px 0;
-      mix-blend-mode: normal;
-      filter: invert(1) brightness(2) drop-shadow(0 0 10px rgba(74,158,255,0.30));
-      opacity: 1;
-      transition: opacity 1s ease;
     }
 
     nav a.contact-link {
@@ -256,7 +249,7 @@
 
   <!-- NAV -->
   <nav>
-    <a href="#" class="logo"><img id="nav-logo-img" src="Heliux_as_logo-v2.png" alt="Heliux" class="nav-logo" style="width:180px !important; height:auto !important;"></a>
+    <a href="#" class="logo"><canvas id="logo-canvas" width="180" height="80" aria-label="Heliux"></canvas></a>
     <a href="#contact" class="contact-link">Contact</a>
   </nav>
 
@@ -328,29 +321,93 @@
     <p>&copy; 2026 Heliux Consulting. All rights reserved.</p>
   </footer>
 
-  <!-- LOGO CYCLING -->
+  <!-- LOGO CANVAS CROSSFADE -->
   <script>
   (function () {
-    var logos = [
-      'Heliux_as_logo-v2.png',
-      'Heliux_as_logo-v6.png',
-      'Heliux_as_logo-v4.png',
-      'Heliux_as_logo-v5.png',
-      'Heliux_as_logo-v3.png'
+    var SRCS = [
+      'Heliux_as_logo-v2.png',  // blue
+      'Heliux_as_logo-v6.png',  // teal
+      'Heliux_as_logo-v4.png',  // green
+      'Heliux_as_logo-v5.png',  // orange
+      'Heliux_as_logo-v3.png'   // purple
     ];
-    var idx = 0;
-    var img = document.getElementById('nav-logo-img');
+    var HOLD_MS       = 6000;  // ms each logo is fully visible
+    var TRANSITION_MS = 1000;  // ms for the crossfade
 
-    setInterval(function () {
-      idx = (idx + 1) % logos.length;
-      // Fade out
-      img.style.opacity = '0';
-      setTimeout(function () {
-        img.src = logos[idx];
-        // Fade in
-        img.style.opacity = '1';
-      }, 1000); // wait for fade-out to complete before swapping src
-    }, 6000);
+    var canvas = document.getElementById('logo-canvas');
+    var ctx    = canvas.getContext('2d');
+    var CW     = canvas.width;
+    var CH     = canvas.height;
+
+    // Preload all images, start animation once every image is ready
+    var images  = [];
+    var loaded  = 0;
+
+    SRCS.forEach(function (src, i) {
+      var img = new Image();
+      img.onload = function () {
+        loaded++;
+        if (loaded === SRCS.length) start();
+      };
+      img.src = src;
+      images[i] = img;
+    });
+
+    // Draw one image fitted and centred inside the canvas at a given alpha
+    function drawFit(img, alpha) {
+      if (alpha <= 0) return;
+      var scale = Math.min(CW / img.naturalWidth, CH / img.naturalHeight);
+      var w = img.naturalWidth  * scale;
+      var h = img.naturalHeight * scale;
+      var x = (CW - w) / 2;
+      var y = (CH - h) / 2;
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(img, x, y, w, h);
+    }
+
+    function start() {
+      var currentIdx    = 0;
+      var nextIdx       = 0;
+      var transitioning = false;
+      var transStart    = 0;
+      var holdStart     = performance.now();
+
+      // Draw the first logo immediately
+      ctx.clearRect(0, 0, CW, CH);
+      drawFit(images[0], 1);
+      ctx.globalAlpha = 1;
+
+      function frame(now) {
+        requestAnimationFrame(frame);
+
+        if (!transitioning) {
+          // Check if it's time to begin the next crossfade
+          if (now - holdStart >= HOLD_MS) {
+            nextIdx       = (currentIdx + 1) % images.length;
+            transitioning = true;
+            transStart    = now;
+          }
+          return; // nothing to redraw while holding
+        }
+
+        // Crossfade in progress
+        var t = Math.min((now - transStart) / TRANSITION_MS, 1);
+
+        ctx.clearRect(0, 0, CW, CH);
+        drawFit(images[currentIdx], 1 - t);  // outgoing fades out
+        drawFit(images[nextIdx],    t);       // incoming fades in
+        ctx.globalAlpha = 1;
+
+        if (t >= 1) {
+          // Transition complete — commit and start holding
+          currentIdx    = nextIdx;
+          transitioning = false;
+          holdStart     = now;
+        }
+      }
+
+      requestAnimationFrame(frame);
+    }
   }());
   </script>
 
