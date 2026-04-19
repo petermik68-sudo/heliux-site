@@ -156,9 +156,9 @@
 
     /* â”€â”€ FOCUS SECTION â”€â”€ */
     #focus {
-      background: #0e0e0e;
+      background: linear-gradient(to bottom, #444444 0%, #111111 100%);
       padding: 120px 48px;
-      border-top: 1px solid rgba(255,255,255,0.05);
+      border-top: none;
     }
 
     .section-label {
@@ -226,7 +226,7 @@
     footer {
       background: var(--bg);
       padding: 40px 48px;
-      border-top: 1px solid rgba(255,255,255,0.05);
+      border-top: none;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -306,7 +306,7 @@
   </section>
 
   <!-- CONTACT -->
-  <div id="contact" style="background:#0e0e0e;padding:100px 48px;text-align:center;border-top:1px solid rgba(255,255,255,0.05);">
+  <div id="contact" style="background: linear-gradient(to bottom, #111111 0%, #0a0a0a 100%);padding:100px 48px;text-align:center;border-top: none;">
     <p style="font-size:0.75rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--blue);margin-bottom:16px;">Get in touch</p>
     <h2 style="font-size:clamp(1.5rem,3vw,2.2rem);font-weight:700;letter-spacing:-0.02em;margin-bottom:20px;">Let's talk about your project.</h2>
     <p style="color:var(--text-muted);font-size:0.95rem;margin-bottom:36px;">No pitch decks. Just a real conversation about what you're building.</p>
@@ -616,7 +616,7 @@
 
       var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
       bgGrad.addColorStop(0, "#cccccc");
-      bgGrad.addColorStop(1, "#333333");
+      bgGrad.addColorStop(1, "#444444");
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, W, H);
 
@@ -643,6 +643,15 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
 
 
 
