@@ -47,13 +47,14 @@
 
     .nav-logo {
       display: block;
-      height: 65px;
+      height: 80px;
       width: auto;
       background: none;
       border: none;
       outline: none;
+      padding: 4px 0;
       mix-blend-mode: normal;
-      filter: drop-shadow(0 0 8px rgba(74,158,255,0.18));
+      filter: brightness(2) drop-shadow(0 0 10px rgba(74,158,255,0.30));
     }
 
     nav a.contact-link {
@@ -386,89 +387,114 @@
     for (var i = 0; i < N; i++) {
       px[i]  = Math.random() * 1400;
       py[i]  = Math.random() * 800;
-      spd[i] = 0.030 + Math.random() * 0.035; // ~0.03–0.065 per frame
-      alf[i] = 0.35 + Math.random() * 0.65;
+      spd[i] = 0.025 + Math.random() * 0.030; // ~0.025–0.055 per frame
+      alf[i] = 0.20 + Math.random() * 0.38;   // max ~0.58 — text always wins
     }
 
-    /* ── Shape functions ──────────────────────────────────────── */
+    /* ── Shape functions ──────────────────────────────────────────
+       All shapes use the FULL viewport (W × H).
+       A centre exclusion zone (clearW × clearH) keeps particles
+       away from the headline text so it stays readable.
+       Particles that would land in the exclusion zone are pushed
+       outward to the nearest edge of that zone instead.
+    ──────────────────────────────────────────────────────────── */
 
-    // 1. Ring — thick glowing circle outline
+    // Pushes a point outside the centre exclusion rectangle.
+    // clearW / clearH are half-widths of the exclusion zone.
+    function clearCentre(x, y) {
+      var cw = W * 0.32;   // half-width  of text zone
+      var ch = H * 0.22;   // half-height of text zone
+      var dx = x - CX, dy = y - CY;
+      if (Math.abs(dx) < cw && Math.abs(dy) < ch) {
+        // Push to whichever edge of the zone is closest
+        var ox = dx >= 0 ? cw - dx : -cw - dx;
+        var oy = dy >= 0 ? ch - dy : -ch - dy;
+        if (Math.abs(ox) < Math.abs(oy)) { x += ox; } else { y += oy; }
+      }
+      return { x: x, y: y };
+    }
+
+    // 1. Ring — large ring that nearly fills the viewport height
     function shapeRing() {
-      var r = Math.min(W, H) * 0.30;
+      var r = Math.min(W, H) * 0.44;
       for (var i = 0; i < N; i++) {
         var a  = Math.random() * Math.PI * 2;
-        var sc = (Math.random() - 0.5) * 18;
-        tx[i]  = CX + (r + sc) * Math.cos(a);
-        ty[i]  = CY + (r + sc) * Math.sin(a);
+        var sc = (Math.random() - 0.5) * 28;
+        var pt = clearCentre(CX + (r + sc) * Math.cos(a), CY + (r + sc) * Math.sin(a));
+        tx[i] = pt.x; ty[i] = pt.y;
       }
     }
 
-    // 2. Sphere surface — 3-D uniform distribution projected to 2-D
+    // 2. Sphere — radius scaled to viewport, pushed wide
     function shapeSphere() {
-      var r = Math.min(W, H) * 0.27;
+      var r = Math.min(W, H) * 0.42;
       for (var i = 0; i < N; i++) {
         var phi   = Math.acos(1 - 2 * Math.random());
         var theta = Math.random() * Math.PI * 2;
         var x3 = r * Math.sin(phi) * Math.cos(theta);
         var y3 = r * Math.sin(phi) * Math.sin(theta);
         var z3 = r * Math.cos(phi);
-        // slight isometric tilt so it reads as a sphere, not a disc
-        tx[i] = CX + x3 + z3 * 0.30;
-        ty[i] = CY + y3 + z3 * 0.30;
+        var pt = clearCentre(CX + x3 + z3 * 0.28, CY + y3 + z3 * 0.28);
+        tx[i] = pt.x; ty[i] = pt.y;
       }
     }
 
-    // 3. Box — particles distributed along four edges
+    // 3. Box — full-viewport rectangle outline with margin
     function shapeBox() {
-      var s    = Math.min(W, H) * 0.46;
-      var half = s / 2;
+      var mx = W * 0.06, my = H * 0.10;   // edge margin
+      var bx = mx, by = my, bw = W - mx * 2, bh = H - my * 2;
+      var perim = 2 * (bw + bh);
       for (var i = 0; i < N; i++) {
-        var side = (Math.random() * 4) | 0;
-        var t    = Math.random();
+        var t = Math.random() * perim;
         var x, y;
-        if      (side === 0) { x = CX - half + t * s; y = CY - half; }
-        else if (side === 1) { x = CX + half;          y = CY - half + t * s; }
-        else if (side === 2) { x = CX + half - t * s;  y = CY + half; }
-        else                 { x = CX - half;           y = CY + half - t * s; }
-        tx[i] = x + (Math.random() - 0.5) * 10;
-        ty[i] = y + (Math.random() - 0.5) * 10;
+        if      (t < bw)           { x = bx + t;       y = by; }
+        else if (t < bw + bh)      { x = bx + bw;      y = by + (t - bw); }
+        else if (t < 2*bw + bh)    { x = bx + bw - (t - bw - bh); y = by + bh; }
+        else                       { x = bx;            y = by + bh - (t - 2*bw - bh); }
+        var pt = clearCentre(x + (Math.random()-0.5)*12, y + (Math.random()-0.5)*12);
+        tx[i] = pt.x; ty[i] = pt.y;
       }
     }
 
-    // 4. Helix — single sine wave across the viewport
+    // 4. Helix — full-width sine wave with tall amplitude
     function shapeHelix() {
-      var amp   = Math.min(W, H) * 0.22;
-      var spanX = W * 0.70;
+      var amp   = H * 0.36;
+      var spanX = W * 0.92;
       for (var i = 0; i < N; i++) {
         var t  = i / N;
-        tx[i]  = CX - spanX / 2 + t * spanX;
-        ty[i]  = CY + Math.sin(t * Math.PI * 6) * amp + (Math.random() - 0.5) * 7;
+        var rx = CX - spanX / 2 + t * spanX;
+        var ry = CY + Math.sin(t * Math.PI * 6) * amp + (Math.random()-0.5)*10;
+        var pt = clearCentre(rx, ry);
+        tx[i] = pt.x; ty[i] = pt.y;
       }
     }
 
-    // 5. Galaxy — three logarithmic spiral arms
+    // 5. Galaxy — three spiral arms across the full canvas
     function shapeGalaxy() {
-      var maxR = Math.min(W, H) * 0.34;
+      var maxR = Math.min(W, H) * 0.48;
       for (var i = 0; i < N; i++) {
         var arm   = (Math.random() * 3) | 0;
         var t     = Math.random();
         var r     = t * maxR;
         var angle = t * Math.PI * 4 + (arm / 3) * Math.PI * 2;
-        tx[i] = CX + r * Math.cos(angle) + (Math.random() - 0.5) * 10;
-        ty[i] = CY + r * Math.sin(angle) + (Math.random() - 0.5) * 10;
+        var pt = clearCentre(CX + r * Math.cos(angle) + (Math.random()-0.5)*14,
+                             CY + r * Math.sin(angle) + (Math.random()-0.5)*14);
+        tx[i] = pt.x; ty[i] = pt.y;
       }
     }
 
-    // 6. DNA — two interleaved helices, offset by π
+    // 6. DNA — two interleaved helices, full width, tall amplitude
     function shapeDNA() {
-      var amp   = Math.min(W, H) * 0.14;
-      var spanX = W * 0.62;
+      var amp   = H * 0.28;
+      var spanX = W * 0.90;
       var half  = N >> 1;
       for (var i = 0; i < N; i++) {
         var t     = i / N;
         var phase = i < half ? 0 : Math.PI;
-        tx[i] = CX - spanX / 2 + t * spanX;
-        ty[i] = CY + Math.sin(t * Math.PI * 8 + phase) * amp + (Math.random() - 0.5) * 5;
+        var rx = CX - spanX / 2 + t * spanX;
+        var ry = CY + Math.sin(t * Math.PI * 8 + phase) * amp + (Math.random()-0.5)*6;
+        var pt = clearCentre(rx, ry);
+        tx[i] = pt.x; ty[i] = pt.y;
       }
     }
 
