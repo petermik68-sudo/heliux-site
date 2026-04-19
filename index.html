@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Heliux Consulting</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #111111;
+      --blue: #4a9eff;
+      --white: #ffffff;
+      --text-muted: #a0a8b8;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: linear-gradient(to bottom, rgba(17,17,17,0.95) 0%, transparent 100%);
+      backdrop-filter: blur(2px);
+    }
+
+    .logo {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      text-decoration: none;
+    }
+    .logo span { color: var(--blue); }
+
+    nav a.contact-link {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-decoration: none;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    nav a.contact-link:hover { color: var(--white); }
+
+    /* ── HERO ── */
+    #hero {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #canvas-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 780px;
+      padding: 0 32px;
+    }
+
+    .hero-content h1 {
+      font-size: clamp(1.9rem, 4.5vw, 3.2rem);
+      font-weight: 700;
+      line-height: 1.18;
+      letter-spacing: -0.03em;
+      color: var(--white);
+      margin-bottom: 22px;
+      text-shadow: 0 0 60px rgba(74,158,255,0.25);
+    }
+
+    .hero-content p {
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 40px;
+      letter-spacing: 0.01em;
+    }
+
+    .cta-btn {
+      display: inline-block;
+      padding: 16px 40px;
+      background: var(--white);
+      color: #111;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      border-radius: 3px;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 0 30px rgba(74,158,255,0.18);
+    }
+    .cta-btn:hover {
+      background: #e8f0ff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 40px rgba(74,158,255,0.35);
+    }
+
+    /* scroll hint */
+    .scroll-hint {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      animation: fadeUpDown 2.4s ease-in-out infinite;
+    }
+    .scroll-hint span {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      opacity: 0.4;
+    }
+    .scroll-hint svg { width: 18px; height: 18px; color: var(--text-muted); opacity: 0.4; }
+
+    @keyframes fadeUpDown {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(6px); }
+    }
+
+    /* ── FOCUS SECTION ── */
+    #focus {
+      background: #0e0e0e;
+      padding: 120px 48px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .section-label {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 16px;
+    }
+
+    #focus h2 {
+      text-align: center;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      margin-bottom: 72px;
+    }
+
+    .focus-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .focus-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 48px 40px;
+      transition: background 0.25s, border-color 0.25s;
+    }
+    .focus-card:hover {
+      background: rgba(74,158,255,0.05);
+      border-color: rgba(74,158,255,0.2);
+    }
+    .focus-card:hover .card-icon { color: var(--blue); }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 24px;
+      transition: color 0.25s;
+    }
+
+    .focus-card h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      margin-bottom: 14px;
+    }
+
+    .focus-card p {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg);
+      padding: 40px 48px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    footer .logo { font-size: 1.1rem; }
+    footer p { font-size: 0.8rem; color: rgba(255,255,255,0.25); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 18px 24px; }
+      #focus { padding: 80px 24px; }
+      footer { padding: 32px 24px; flex-direction: column; gap: 12px; text-align: center; }
+      .focus-grid { grid-template-columns: 1fr; gap: 2px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="logo">Heliux<span>.</span></a>
+    <a href="#contact" class="contact-link">Contact</a>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <canvas id="canvas-bg"></canvas>
+
+    <div class="hero-content">
+      <h1>Turning ideas, systems, and opportunities into what actually works.</h1>
+      <p>Applied across emerging technologies, renewable energy, and business.</p>
+      <a href="#contact" class="cta-btn">Start A Conversation</a>
+    </div>
+
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- FOCUS -->
+  <section id="focus">
+    <p class="section-label">What we do</p>
+    <h2>Our Core Focus</h2>
+
+    <div class="focus-grid">
+      <div class="focus-card">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
+        </svg>
+        <h3>Emerging Tech</h3>
+        <p>Navigating the frontier of AI, automation, and digital transformation — identifying what's signal and what's noise, then building for what's real.</p>
+      </div>
+
+      <div class="focus-card">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <h3>Renewable Energy</h3>
+        <p>From solar specification to off-grid systems and sustainable infrastructure — turning energy challenges into deployable, durable solutions.</p>
+      </div>
+
+      <div class="focus-card">
+        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        <h3>Business Strategy</h3>
+        <p>Cutting through complexity to find the moves that matter — operational clarity, market positioning, and growth built on what's actually working.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <div id="contact" style="background:#0e0e0e;padding:100px 48px;text-align:center;border-top:1px solid rgba(255,255,255,0.05);">
+    <p style="font-size:0.75rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--blue);margin-bottom:16px;">Get in touch</p>
+    <h2 style="font-size:clamp(1.5rem,3vw,2.2rem);font-weight:700;letter-spacing:-0.02em;margin-bottom:20px;">Let's talk about your project.</h2>
+    <p style="color:var(--text-muted);font-size:0.95rem;margin-bottom:36px;">No pitch decks. Just a real conversation about what you're building.</p>
+    <a href="mailto:hello@heliux.ca" class="cta-btn">hello@heliux.ca</a>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <a href="#" class="logo">Heliux<span style="color:var(--blue);">.</span></a>
+    <p>&copy; 2026 Heliux Consulting. All rights reserved.</p>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       PARTICLE ANIMATION
+       Pure HTML5 Canvas 2D — no WebGL, no libraries whatsoever.
+
+       How it works:
+       - A tiny 20×20 glow sprite is pre-rendered once to an
+         offscreen canvas using a radial gradient.  Every frame
+         we stamp that sprite at each particle position with
+         drawImage(), which is very fast.
+       - Each particle stores a current (px, py) and a target
+         (tx, ty).  We lerp px/py toward the target each frame,
+         giving the smooth morphing effect.
+       - The canvas is cleared with a semi-transparent fill
+         instead of clearRect, producing a fading trail.
+       - Six shape functions write new targets into tx[]/ty[].
+         A timer cycles through them every ~4 seconds.
+  ═══════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    var canvas = document.getElementById('canvas-bg');
+    var ctx    = canvas.getContext('2d');
+
+    /* ── Viewport dimensions ──────────────────────────────────── */
+    var W, H, CX, CY;
+    function resize() {
+      W  = canvas.width  = canvas.offsetWidth;
+      H  = canvas.height = canvas.offsetHeight;
+      CX = W / 2;
+      CY = H / 2;
+    }
+    resize();
+    window.addEventListener('resize', function () { resize(); applyShape(); });
+
+    /* ── Pre-render a single glow dot to an offscreen canvas ──── */
+    var GR = 10;                        // glow radius in px
+    var GS = GR * 2;                    // sprite canvas side length
+    var sprite = document.createElement('canvas');
+    sprite.width = sprite.height = GS;
+    var sg   = sprite.getContext('2d');
+    var grad = sg.createRadialGradient(GR, GR, 0, GR, GR, GR);
+    grad.addColorStop(0.00, 'rgba(230, 245, 255, 1.00)');  // bright white-blue core
+    grad.addColorStop(0.18, 'rgba(100, 185, 255, 0.85)');  // mid blue
+    grad.addColorStop(0.50, 'rgba( 50, 130, 255, 0.35)');  // soft halo
+    grad.addColorStop(1.00, 'rgba( 20,  70, 255, 0.00)');  // transparent edge
+    sg.fillStyle = grad;
+    sg.fillRect(0, 0, GS, GS);
+
+    /* ── Particle arrays (typed for speed) ───────────────────── */
+    var N   = 3000;
+    var px  = new Float32Array(N);   // current x
+    var py  = new Float32Array(N);   // current y
+    var tx  = new Float32Array(N);   // target x
+    var ty  = new Float32Array(N);   // target y
+    var spd = new Float32Array(N);   // individual lerp speed (variety)
+    var alf = new Float32Array(N);   // individual alpha
+
+    for (var i = 0; i < N; i++) {
+      px[i]  = Math.random() * 1400;
+      py[i]  = Math.random() * 800;
+      spd[i] = 0.030 + Math.random() * 0.035; // ~0.03–0.065 per frame
+      alf[i] = 0.35 + Math.random() * 0.65;
+    }
+
+    /* ── Shape functions ──────────────────────────────────────── */
+
+    // 1. Ring — thick glowing circle outline
+    function shapeRing() {
+      var r = Math.min(W, H) * 0.30;
+      for (var i = 0; i < N; i++) {
+        var a  = Math.random() * Math.PI * 2;
+        var sc = (Math.random() - 0.5) * 18;
+        tx[i]  = CX + (r + sc) * Math.cos(a);
+        ty[i]  = CY + (r + sc) * Math.sin(a);
+      }
+    }
+
+    // 2. Sphere surface — 3-D uniform distribution projected to 2-D
+    function shapeSphere() {
+      var r = Math.min(W, H) * 0.27;
+      for (var i = 0; i < N; i++) {
+        var phi   = Math.acos(1 - 2 * Math.random());
+        var theta = Math.random() * Math.PI * 2;
+        var x3 = r * Math.sin(phi) * Math.cos(theta);
+        var y3 = r * Math.sin(phi) * Math.sin(theta);
+        var z3 = r * Math.cos(phi);
+        // slight isometric tilt so it reads as a sphere, not a disc
+        tx[i] = CX + x3 + z3 * 0.30;
+        ty[i] = CY + y3 + z3 * 0.30;
+      }
+    }
+
+    // 3. Box — particles distributed along four edges
+    function shapeBox() {
+      var s    = Math.min(W, H) * 0.46;
+      var half = s / 2;
+      for (var i = 0; i < N; i++) {
+        var side = (Math.random() * 4) | 0;
+        var t    = Math.random();
+        var x, y;
+        if      (side === 0) { x = CX - half + t * s; y = CY - half; }
+        else if (side === 1) { x = CX + half;          y = CY - half + t * s; }
+        else if (side === 2) { x = CX + half - t * s;  y = CY + half; }
+        else                 { x = CX - half;           y = CY + half - t * s; }
+        tx[i] = x + (Math.random() - 0.5) * 10;
+        ty[i] = y + (Math.random() - 0.5) * 10;
+      }
+    }
+
+    // 4. Helix — single sine wave across the viewport
+    function shapeHelix() {
+      var amp   = Math.min(W, H) * 0.22;
+      var spanX = W * 0.70;
+      for (var i = 0; i < N; i++) {
+        var t  = i / N;
+        tx[i]  = CX - spanX / 2 + t * spanX;
+        ty[i]  = CY + Math.sin(t * Math.PI * 6) * amp + (Math.random() - 0.5) * 7;
+      }
+    }
+
+    // 5. Galaxy — three logarithmic spiral arms
+    function shapeGalaxy() {
+      var maxR = Math.min(W, H) * 0.34;
+      for (var i = 0; i < N; i++) {
+        var arm   = (Math.random() * 3) | 0;
+        var t     = Math.random();
+        var r     = t * maxR;
+        var angle = t * Math.PI * 4 + (arm / 3) * Math.PI * 2;
+        tx[i] = CX + r * Math.cos(angle) + (Math.random() - 0.5) * 10;
+        ty[i] = CY + r * Math.sin(angle) + (Math.random() - 0.5) * 10;
+      }
+    }
+
+    // 6. DNA — two interleaved helices, offset by π
+    function shapeDNA() {
+      var amp   = Math.min(W, H) * 0.14;
+      var spanX = W * 0.62;
+      var half  = N >> 1;
+      for (var i = 0; i < N; i++) {
+        var t     = i / N;
+        var phase = i < half ? 0 : Math.PI;
+        tx[i] = CX - spanX / 2 + t * spanX;
+        ty[i] = CY + Math.sin(t * Math.PI * 8 + phase) * amp + (Math.random() - 0.5) * 5;
+      }
+    }
+
+    var shapes   = [shapeRing, shapeSphere, shapeBox, shapeHelix, shapeGalaxy, shapeDNA];
+    var shapeIdx = 0;
+
+    function applyShape() {
+      shapes[shapeIdx]();
+    }
+    applyShape(); // load first shape targets before first frame
+
+    /* ── Mouse parallax ──────────────────────────────────────── */
+    var mouseX = 0, mouseY = 0;
+    window.addEventListener('mousemove', function (e) {
+      mouseX = e.clientX - CX;
+      mouseY = e.clientY - CY;
+    });
+
+    /* ── Animation loop ──────────────────────────────────────── */
+    var MORPH_MS  = 4200;                   // ms between shape changes
+    var lastMorph = performance.now();
+
+    function frame(now) {
+      requestAnimationFrame(frame);
+
+      // Advance shape on schedule
+      if (now - lastMorph > MORPH_MS) {
+        shapeIdx = (shapeIdx + 1) % shapes.length;
+        applyShape();
+        lastMorph = now;
+      }
+
+      // Partial clear — leaves a fading trail that dissolves old positions
+      ctx.fillStyle = 'rgba(17, 17, 17, 0.20)';
+      ctx.fillRect(0, 0, W, H);
+
+      // Parallax nudge (scaled down so it stays subtle)
+      var ox = mouseX * 0.032;
+      var oy = mouseY * 0.032;
+
+      // Move each particle toward its target and stamp the glow sprite
+      for (var i = 0; i < N; i++) {
+        // Lerp — each particle has a slightly different speed for organic feel
+        px[i] += (tx[i] + ox - px[i]) * spd[i];
+        py[i] += (ty[i] + oy - py[i]) * spd[i];
+
+        ctx.globalAlpha = alf[i];
+        ctx.drawImage(sprite, px[i] - GR, py[i] - GR);
+      }
+
+      ctx.globalAlpha = 1;
+    }
+
+    requestAnimationFrame(frame);
+  }());
+  </script>
+
+</body>
+</html>
