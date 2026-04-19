@@ -1,4 +1,4 @@
-<!-- v10 -->
+﻿<!-- v10 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,13 +18,13 @@
     html { scroll-behavior: smooth; }
 
     body {
-      background: linear-gradient(to bottom, #1a1a2e 0%, #0a0a0a 100%) !important;
+      background: linear-gradient(to bottom, #888888 0%, #222222 100%) !important;
       color: var(--white);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       overflow-x: hidden;
     }
 
-    /* ── NAV ── */
+    /* â”€â”€ NAV â”€â”€ */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -33,7 +33,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 15px 40px;
-      background: linear-gradient(to bottom, rgba(17,17,17,0.95) 0%, transparent 100%);
+      background: transparent;
       backdrop-filter: blur(2px);
     }
 
@@ -46,12 +46,7 @@
     }
     .logo span { color: var(--blue); }
 
-    #logo-canvas {
-      display: block;
-      width: 220px;
-      height: 100px;
-      padding: 4px 0;
-    }
+    #logo-canvas { display: block; width: 280px; height: auto; cursor: pointer; }
 
     nav a.contact-link {
       font-size: 0.9rem;
@@ -63,7 +58,7 @@
     }
     nav a.contact-link:hover { color: var(--white); }
 
-    /* ── HERO ── */
+    /* â”€â”€ HERO â”€â”€ */
     #hero {
       position: relative;
       width: 100%;
@@ -159,7 +154,7 @@
       50%       { transform: translateX(-50%) translateY(6px); }
     }
 
-    /* ── FOCUS SECTION ── */
+    /* â”€â”€ FOCUS SECTION â”€â”€ */
     #focus {
       background: #0e0e0e;
       padding: 120px 48px;
@@ -227,7 +222,7 @@
       color: var(--text-muted);
     }
 
-    /* ── FOOTER ── */
+    /* â”€â”€ FOOTER â”€â”€ */
     footer {
       background: var(--bg);
       padding: 40px 48px;
@@ -239,7 +234,7 @@
     footer .logo { font-size: 1.1rem; }
     footer p { font-size: 0.8rem; color: rgba(255,255,255,0.25); }
 
-    /* ── RESPONSIVE ── */
+    /* â”€â”€ RESPONSIVE â”€â”€ */
     @media (max-width: 768px) {
       nav { padding: 18px 24px; }
       #focus { padding: 80px 24px; }
@@ -248,11 +243,11 @@
     }
   </style>
 </head>
-<body style="background: linear-gradient(to bottom, #1e1e2e 0%, #0a0a0a 100%) !important; min-height: 100vh;">
+<body style="background: linear-gradient(to bottom, #888888 0%, #222222 100%) !important; min-height: 100vh;">
 
   <!-- NAV -->
   <nav>
-    <a href="#" class="logo"><canvas id="logo-canvas" width="220" height="100" aria-label="Heliux"></canvas></a>
+    <a href="#" class="logo"><canvas id="logo-canvas" width="500" height="300" aria-label="Heliux"></canvas></a>
     <a href="#contact" class="contact-link">Contact</a>
   </nav>
 
@@ -285,7 +280,7 @@
           <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
         </svg>
         <h3>Emerging Tech</h3>
-        <p>Navigating the frontier of AI, automation, and digital transformation — identifying what's signal and what's noise, then building for what's real.</p>
+        <p>Navigating the frontier of AI, automation, and digital transformation â€” identifying what's signal and what's noise, then building for what's real.</p>
       </div>
 
       <div class="focus-card">
@@ -297,7 +292,7 @@
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
         <h3>Renewable Energy</h3>
-        <p>From solar specification to off-grid systems and sustainable infrastructure — turning energy challenges into deployable, durable solutions.</p>
+        <p>From solar specification to off-grid systems and sustainable infrastructure â€” turning energy challenges into deployable, durable solutions.</p>
       </div>
 
       <div class="focus-card">
@@ -305,7 +300,7 @@
           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
         </svg>
         <h3>Business Strategy</h3>
-        <p>Cutting through complexity to find the moves that matter — operational clarity, market positioning, and growth built on what's actually working.</p>
+        <p>Cutting through complexity to find the moves that matter â€” operational clarity, market positioning, and growth built on what's actually working.</p>
       </div>
     </div>
   </section>
@@ -406,7 +401,7 @@
         ctx.globalCompositeOperation = 'source-over';
 
         if (t >= 1) {
-          // Transition complete — commit and start holding
+          // Transition complete â€” commit and start holding
           currentIdx    = nextIdx;
           transitioning = false;
           holdStart     = now;
@@ -418,12 +413,12 @@
   }());
   </script>
 
-  <!-- ═══════════════════════════════════════════════════════════
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
        PARTICLE ANIMATION
-       Pure HTML5 Canvas 2D — no WebGL, no libraries whatsoever.
+       Pure HTML5 Canvas 2D â€” no WebGL, no libraries whatsoever.
 
        How it works:
-       - A tiny 20×20 glow sprite is pre-rendered once to an
+       - A tiny 20Ã—20 glow sprite is pre-rendered once to an
          offscreen canvas using a radial gradient.  Every frame
          we stamp that sprite at each particle position with
          drawImage(), which is very fast.
@@ -434,7 +429,7 @@
          instead of clearRect, producing a fading trail.
        - Six shape functions write new targets into tx[]/ty[].
          A timer cycles through them every ~4 seconds.
-  ═══════════════════════════════════════════════════════════ -->
+  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <script>
   (function () {
     'use strict';
@@ -442,7 +437,7 @@
     var canvas = document.getElementById('canvas-bg');
     var ctx    = canvas.getContext('2d');
 
-    /* ── Viewport dimensions ──────────────────────────────────── */
+    /* â”€â”€ Viewport dimensions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     var W, H, CX, CY;
     function resize() {
       W  = canvas.width  = canvas.offsetWidth;
@@ -453,7 +448,7 @@
     resize();
     window.addEventListener('resize', function () { resize(); applyShape(); });
 
-    /* ── Pre-render a single glow dot to an offscreen canvas ──── */
+    /* â”€â”€ Pre-render a single glow dot to an offscreen canvas â”€â”€â”€â”€ */
     var GR = 10;                        // glow radius in px
     var GS = GR * 2;                    // sprite canvas side length
     var sprite = document.createElement('canvas');
@@ -467,7 +462,7 @@
     sg.fillStyle = grad;
     sg.fillRect(0, 0, GS, GS);
 
-    /* ── Particle arrays (typed for speed) ───────────────────── */
+    /* â”€â”€ Particle arrays (typed for speed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     var N   = 3000;
     var px  = new Float32Array(N);   // current x
     var py  = new Float32Array(N);   // current y
@@ -479,17 +474,17 @@
     for (var i = 0; i < N; i++) {
       px[i]  = Math.random() * 1400;
       py[i]  = Math.random() * 800;
-      spd[i] = 0.025 + Math.random() * 0.030; // ~0.025–0.055 per frame
-      alf[i] = 0.20 + Math.random() * 0.38;   // max ~0.58 — text always wins
+      spd[i] = 0.025 + Math.random() * 0.030; // ~0.025â€“0.055 per frame
+      alf[i] = 0.20 + Math.random() * 0.38;   // max ~0.58 â€” text always wins
     }
 
-    /* ── Shape functions ──────────────────────────────────────────
-       All shapes use the FULL viewport (W × H).
-       A centre exclusion zone (clearW × clearH) keeps particles
+    /* â”€â”€ Shape functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+       All shapes use the FULL viewport (W Ã— H).
+       A centre exclusion zone (clearW Ã— clearH) keeps particles
        away from the headline text so it stays readable.
        Particles that would land in the exclusion zone are pushed
        outward to the nearest edge of that zone instead.
-    ──────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
     // Pushes a point outside the centre exclusion rectangle.
     // clearW / clearH are half-widths of the exclusion zone.
@@ -506,7 +501,7 @@
       return { x: x, y: y };
     }
 
-    // 1. Ring — large ring that nearly fills the viewport height
+    // 1. Ring â€” large ring that nearly fills the viewport height
     function shapeRing() {
       var r = Math.min(W, H) * 0.44;
       for (var i = 0; i < N; i++) {
@@ -517,7 +512,7 @@
       }
     }
 
-    // 2. Sphere — radius scaled to viewport, pushed wide
+    // 2. Sphere â€” radius scaled to viewport, pushed wide
     function shapeSphere() {
       var r = Math.min(W, H) * 0.42;
       for (var i = 0; i < N; i++) {
@@ -531,7 +526,7 @@
       }
     }
 
-    // 3. Box — full-viewport rectangle outline with margin
+    // 3. Box â€” full-viewport rectangle outline with margin
     function shapeBox() {
       var mx = W * 0.06, my = H * 0.10;   // edge margin
       var bx = mx, by = my, bw = W - mx * 2, bh = H - my * 2;
@@ -548,7 +543,7 @@
       }
     }
 
-    // 4. Helix — full-width sine wave with tall amplitude
+    // 4. Helix â€” full-width sine wave with tall amplitude
     function shapeHelix() {
       var amp   = H * 0.36;
       var spanX = W * 0.92;
@@ -561,7 +556,7 @@
       }
     }
 
-    // 5. Galaxy — three spiral arms across the full canvas
+    // 5. Galaxy â€” three spiral arms across the full canvas
     function shapeGalaxy() {
       var maxR = Math.min(W, H) * 0.48;
       for (var i = 0; i < N; i++) {
@@ -575,7 +570,7 @@
       }
     }
 
-    // 6. DNA — two interleaved helices, full width, tall amplitude
+    // 6. DNA â€” two interleaved helices, full width, tall amplitude
     function shapeDNA() {
       var amp   = H * 0.28;
       var spanX = W * 0.90;
@@ -598,14 +593,14 @@
     }
     applyShape(); // load first shape targets before first frame
 
-    /* ── Mouse parallax ──────────────────────────────────────── */
+    /* â”€â”€ Mouse parallax â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     var mouseX = 0, mouseY = 0;
     window.addEventListener('mousemove', function (e) {
       mouseX = e.clientX - CX;
       mouseY = e.clientY - CY;
     });
 
-    /* ── Animation loop ──────────────────────────────────────── */
+    /* â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     var MORPH_MS  = 4200;                   // ms between shape changes
     var lastMorph = performance.now();
 
@@ -619,9 +614,11 @@
         lastMorph = now;
       }
 
-      // Clear to transparent so body gradient shows through
-      ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-      ctx.clearRect(0, 0, W, H);
+      var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+      bgGrad.addColorStop(0, "#cccccc");
+      bgGrad.addColorStop(1, "#333333");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
 
       // Parallax nudge (scaled down so it stays subtle)
       var ox = mouseX * 0.032;
@@ -629,7 +626,7 @@
 
       // Move each particle toward its target and stamp the glow sprite
       for (var i = 0; i < N; i++) {
-        // Lerp — each particle has a slightly different speed for organic feel
+        // Lerp â€” each particle has a slightly different speed for organic feel
         px[i] += (tx[i] + ox - px[i]) * spd[i];
         py[i] += (ty[i] + oy - py[i]) * spd[i];
 
@@ -646,3 +643,19 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
