@@ -728,8 +728,8 @@
     var saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'on') enabled = true;
 
-    var heroNoise = null;
-    var heroNoiseStarted = false;
+    var heroOscs = [];
+    var heroStarted = false;
 
     function initAudio() {
       if (audioCtx) return;
@@ -738,27 +738,57 @@
       masterGain.gain.value = 0;
       masterGain.connect(audioCtx.destination);
 
-      var rate   = audioCtx.sampleRate;
-      var bufLen = rate * 3;
-      var buf    = audioCtx.createBuffer(1, bufLen, rate);
-      var data   = buf.getChannelData(0);
-      for (var i = 0; i < bufLen; i++) { data[i] = Math.random() * 2 - 1; }
+      // Output bus at gentle level
+      var ambOut = audioCtx.createGain();
+      ambOut.gain.value = 0.22;
+      ambOut.connect(masterGain);
 
-      heroNoise = audioCtx.createBufferSource();
-      heroNoise.buffer = buf;
-      heroNoise.loop   = true;
+      // Feedback delay for spatial depth
+      var delay  = audioCtx.createDelay(3.0);
+      delay.delayTime.value = 1.2;
+      var fbGain = audioCtx.createGain();
+      fbGain.gain.value = 0.38;
+      var fbLp   = audioCtx.createBiquadFilter();
+      fbLp.type = 'lowpass'; fbLp.frequency.value = 500;
+      delay.connect(fbLp); fbLp.connect(fbGain); fbGain.connect(delay);
+      delay.connect(ambOut);
 
-      var lp = audioCtx.createBiquadFilter();
-      lp.type            = 'lowpass';
-      lp.frequency.value = 320;
-      lp.Q.value         = 0.7;
+      // Main lowpass softens the drones
+      var mainLp = audioCtx.createBiquadFilter();
+      mainLp.type = 'lowpass'; mainLp.frequency.value = 800; mainLp.Q.value = 0.3;
+      mainLp.connect(ambOut);
+      mainLp.connect(delay);
 
-      var heroGain = audioCtx.createGain();
-      heroGain.gain.value = 0.12;
+      // Three sine drones: A2, E3, A3 — musical fifth and octave stack
+      var tones = [
+        { freq: 110, detune:  0, gain: 0.30, lfoHz: 0.07, lfoDepth: 0.10 },
+        { freq: 165, detune:  5, gain: 0.22, lfoHz: 0.11, lfoDepth: 0.08 },
+        { freq: 220, detune: -4, gain: 0.14, lfoHz: 0.05, lfoDepth: 0.07 },
+        { freq: 330, detune:  2, gain: 0.07, lfoHz: 0.09, lfoDepth: 0.05 },
+      ];
 
-      heroNoise.connect(lp);
-      lp.connect(heroGain);
-      heroGain.connect(masterGain);
+      tones.forEach(function (t) {
+        var osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = t.freq;
+        osc.detune.value = t.detune;
+
+        var og = audioCtx.createGain();
+        og.gain.value = t.gain;
+
+        // Slow amplitude LFO — makes each tone breathe independently
+        var lfo  = audioCtx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = t.lfoHz;
+        var lfog = audioCtx.createGain();
+        lfog.gain.value = t.lfoDepth;
+        lfo.connect(lfog);
+        lfog.connect(og.gain);
+
+        osc.connect(og);
+        og.connect(mainLp);
+        heroOscs.push(osc, lfo);
+      });
     }
 
     function setVolume(vol, durationMs) {
@@ -783,11 +813,11 @@
         if (enabled) {
           initAudio();
           var startSound = function () {
-            if (!heroNoiseStarted) {
-              heroNoise.start(0);
-              heroNoiseStarted = true;
+            if (!heroStarted) {
+              heroOscs.forEach(function (o) { o.start(0); });
+              heroStarted = true;
             }
-            setVolume(1.0, 400);
+            setVolume(1.0, 800);
           };
           if (audioCtx.state === 'suspended') {
             audioCtx.resume().then(startSound);
