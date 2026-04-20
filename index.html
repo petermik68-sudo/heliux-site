@@ -329,9 +329,11 @@
       'Heliux_as_logo-v5.png',  // orange
       'Heliux_as_logo-v3.png'   // purple
     ];
-    var HOLD_MS       = 6000;  // ms each logo is fully visible
+    var HOLD_MS = 4000;  // ms each logo is fully visible
     var TRANSITION_MS = 1000;  // ms for the crossfade
 
+    // Expose logo state globally for particle sync
+    window.logoState = { idx: 0, t: 0, transitioning: false };
     var canvas = document.getElementById('logo-canvas');
     var ctx    = canvas.getContext('2d');
     var CW     = canvas.width;
@@ -387,11 +389,13 @@
             transitioning = true;
             transStart    = now;
           }
+          window.logoState = { idx: currentIdx, t: 1, transitioning: false };
           return; // nothing to redraw while holding
         }
 
         // Crossfade in progress
         var t = Math.min((now - transStart) / TRANSITION_MS, 1);
+        window.logoState = { idx: currentIdx, nextIdx: nextIdx, t: t, transitioning: true };
 
         ctx.clearRect(0, 0, CW, CH);
         ctx.globalCompositeOperation = 'lighter';
@@ -405,6 +409,7 @@
           currentIdx    = nextIdx;
           transitioning = false;
           holdStart     = now;
+          window.logoState = { idx: nextIdx, nextIdx: nextIdx, t: 1, transitioning: false };
         }
       }
 
@@ -461,6 +466,47 @@
     grad.addColorStop(1.00, 'rgba( 20,  70, 255, 0.00)');  // transparent edge
     sg.fillStyle = grad;
     sg.fillRect(0, 0, GS, GS);
+
+    // Spectrum colors matching logo sequence
+    var SPECTRUM = [
+      [74,  158, 255],  // blue   - v2  index 0
+      [180, 80,  255],  // purple - v3  index 1
+      [50,  200, 80 ],  // green  - v4  index 2
+      [255, 140, 0  ],  // orange - v5  index 3
+      [0,   200, 200]   // teal   - v6  index 4
+    ];
+    var currentColor = 0;
+
+    function updateSpriteColor(rgb) {
+      sg.clearRect(0, 0, GS, GS);
+      var g = sg.createRadialGradient(GR, GR, 0, GR, GR, GR);
+      g.addColorStop(0.00, 'rgba(255,255,255,1.00)');
+      g.addColorStop(0.18, 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.85)');
+      g.addColorStop(0.50, 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.35)');
+      g.addColorStop(1.00, 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.00)');
+      sg.fillStyle = g;
+      sg.fillRect(0, 0, GS, GS);
+    }
+
+    // Sync particle color smoothly per frame using logoState interpolation
+    function syncParticleColor() {
+      var ls = window.logoState;
+      if (ls) {
+        var c1 = SPECTRUM[ls.idx % SPECTRUM.length];
+        if (ls.transitioning && ls.nextIdx !== undefined) {
+          var c2 = SPECTRUM[ls.nextIdx % SPECTRUM.length];
+          var t  = ls.t;
+          var r  = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+          var g  = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+          var b  = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+          updateSpriteColor([r, g, b]);
+        } else {
+          updateSpriteColor(c1);
+        }
+      }
+      requestAnimationFrame(syncParticleColor);
+    }
+    requestAnimationFrame(syncParticleColor);
 
     /* â”€â”€ Particle arrays (typed for speed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     var N   = 3000;
@@ -643,6 +689,16 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
 
 
 
