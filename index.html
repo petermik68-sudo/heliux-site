@@ -173,9 +173,8 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--text-muted);
-      opacity: 0.4;
     }
-    .scroll-hint svg { width: 18px; height: 18px; color: var(--text-muted); opacity: 0.4; }
+    .scroll-hint svg { width: 18px; height: 18px; color: var(--text-muted); }
 
     @keyframes fadeUpDown {
       0%, 100% { transform: translateX(-50%) translateY(0); }
@@ -729,12 +728,38 @@
     var saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'on') enabled = true;
 
+    var heroNoise = null;
+
     function initAudio() {
       if (audioCtx) return;
       audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
       masterGain = audioCtx.createGain();
       masterGain.gain.value = 0;
       masterGain.connect(audioCtx.destination);
+
+      // Hero idle: soft filtered white noise, ~3% level per brief
+      var rate   = audioCtx.sampleRate;
+      var bufLen = rate * 3; // 3-second looping buffer
+      var buf    = audioCtx.createBuffer(1, bufLen, rate);
+      var data   = buf.getChannelData(0);
+      for (var i = 0; i < bufLen; i++) { data[i] = Math.random() * 2 - 1; }
+
+      heroNoise = audioCtx.createBufferSource();
+      heroNoise.buffer = buf;
+      heroNoise.loop   = true;
+
+      var lp = audioCtx.createBiquadFilter();
+      lp.type            = 'lowpass';
+      lp.frequency.value = 320;
+      lp.Q.value         = 0.7;
+
+      var heroGain = audioCtx.createGain();
+      heroGain.gain.value = 0.03;
+
+      heroNoise.connect(lp);
+      lp.connect(heroGain);
+      heroGain.connect(masterGain);
+      heroNoise.start(0);
     }
 
     function setVolume(vol, durationMs) {
@@ -757,9 +782,13 @@
         btn.classList.toggle('sound-on', enabled);
 
         if (enabled) {
-          initAudio(); // handles autoplay policy — gesture already happened
-          if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-          setVolume(0.15, 400);
+          initAudio();
+          var startSound = function () { setVolume(0.15, 400); };
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(startSound);
+          } else {
+            startSound();
+          }
         } else {
           setVolume(0, 300);
         }
@@ -978,7 +1007,7 @@
       var spd   = 0.08 + Math.random() * 0.14;
       vx[i]  = Math.cos(angle) * spd;
       vy[i]  = Math.sin(angle) * spd;
-      alf[i] = 0.06 + Math.random() * 0.13; // 0.06–0.19 max
+      alf[i] = 0.35 + Math.random() * 0.20; // 0.35–0.55 range
     }
 
     function frame() {
