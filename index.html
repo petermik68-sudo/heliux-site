@@ -1081,394 +1081,134 @@
   </script>
 
   <!-- ═══════════════════════════════════════════════════════════
-       BRAIN NEURON NETWORK — Step 2
-       Brain outline + axon tree pre-computed at init.
-       Pulses, formulas, mouse bloom/repulsion per Section 6.
+       BRAIN — outline particles (Step 2a: silhouette + gyri)
   ═══════════════════════════════════════════════════════════ -->
   <script>
   (function () {
     'use strict';
 
-    /* ── Unicode formulas ─────────────────────────────────────── */
-    var FORMULAS = [
-      'H = -\u03a3 p(x) log p(x)',
-      '\u0177 = \u03c3(\u03a3 w\u1d62x\u1d62 + b)',
-      '\u03b8 = \u03b8 - \u03b1\u2207J(\u03b8)',
-      'P(A|B) = P(B|A)P(A) / P(B)',
-      'F(\u03c9) = \u222ff(t)e^(-i\u03c9t)dt'
+    var canvas = document.getElementById('canvas-brain');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = 0, H = 0;
+
+    function resize() {
+      W = canvas.width  = canvas.offsetWidth  || canvas.parentElement.offsetWidth  || 360;
+      H = canvas.height = canvas.offsetHeight || canvas.parentElement.offsetHeight || 320;
+      buildOutline();
+    }
+
+    var SILHOUETTE = [
+      [310, 740,  180, 710,   90, 540,   90, 380],
+      [ 90, 380,   75, 240,  130,  90,  300,  50],
+      [300,  50,  480,  15,  680,  15,  840,  70],
+      [840,  70,  960, 150,  975, 370,  920, 500],
+      [920, 500,  890, 640,  770, 750,  600, 770],
+      [600, 770,  490, 790,  390, 770,  310, 740],
     ];
 
-    /* ── Cubic bezier helpers ─────────────────────────────────── */
-    function bez(t, a, b, c, d) {
-      var u = 1 - t;
-      return u*u*u*a + 3*u*u*t*b + 3*u*t*t*c + t*t*t*d;
-    }
-    function samplePath(ax,ay, bx,by, cx,cy, dx,dy, n) {
-      var pts = new Float32Array(n * 2);
-      for (var i = 0; i < n; i++) {
-        var t = n > 1 ? i / (n - 1) : 0;
-        pts[i*2]   = bez(t, ax, bx, cx, dx);
-        pts[i*2+1] = bez(t, ay, by, cy, dy);
-      }
-      return pts;
-    }
-
-    /* ── Glow sprite factory ─────────────────────────────────── */
-    function makeSprite(r, col) {
-      var c = document.createElement('canvas');
-      c.width = c.height = r * 2;
-      var sc = c.getContext('2d');
-      var g  = sc.createRadialGradient(r,r,0, r,r,r);
-      g.addColorStop(0,    'rgba(255,255,255,0.96)');
-      g.addColorStop(0.22, 'rgba('+col+',0.72)');
-      g.addColorStop(0.62, 'rgba('+col+',0.22)');
-      g.addColorStop(1,    'rgba('+col+',0.00)');
-      sc.fillStyle = g;
-      sc.fillRect(0, 0, r*2, r*2);
-      return c;
-    }
-    var SP_BLUE    = makeSprite(5,  '74,158,255');
-    var SP_OUTLINE = makeSprite(4,  '122,184,255');
-    var SP_DARK    = makeSprite(4,  '26,58,106');
-    var SP_WHITE   = makeSprite(8,  '255,255,255');
-    var SP_BLOOM   = makeSprite(12, '200,230,255');
-
-    /* ── Brain outline — hardcoded bezier control points ─────────
-       Left hemisphere silhouette + 6 gyri fold lines.
-       All coords are normalized relative to (cx,cy) with rx/ry scale.
-       Never recalculated per frame.
-    ──────────────────────────────────────────────────────────── */
-    var OUTER = [
-      [-0.30, 0.45, -0.15, 0.52,  0.10, 0.52,  0.30, 0.42],
-      [ 0.30, 0.42,  0.52, 0.38,  0.58, 0.18,  0.56, 0.02],
-      [ 0.56, 0.02,  0.60,-0.18,  0.48,-0.30,  0.38,-0.35],
-      [ 0.38,-0.35,  0.30,-0.52,  0.15,-0.48,  0.05,-0.42],
-      [ 0.05,-0.42, -0.05,-0.55, -0.20,-0.50, -0.28,-0.42],
-      [-0.28,-0.42, -0.42,-0.52, -0.52,-0.40, -0.52,-0.28],
-      [-0.52,-0.28, -0.62,-0.15, -0.60, 0.05, -0.52, 0.18],
-      [-0.52, 0.18, -0.55, 0.30, -0.45, 0.42, -0.30, 0.45]
-    ];
     var GYRI = [
-      [ 0.42,-0.28,  0.35,-0.15,  0.28,-0.08,  0.20,-0.05],
-      [ 0.20,-0.05,  0.25, 0.08,  0.22, 0.18,  0.16, 0.22],
-      [ 0.05,-0.38,  0.00,-0.22, -0.05,-0.10, -0.02, 0.00],
-      [-0.30,-0.38, -0.28,-0.25, -0.25,-0.12, -0.22,-0.05],
-      [-0.22,-0.05, -0.32, 0.05, -0.35, 0.18, -0.30, 0.28],
-      [-0.05, 0.38,  0.00, 0.25,  0.05, 0.15,  0.08, 0.08]
+      [145, 510,  340, 472,  550, 465,  720, 478],
+      [370,  65,  412, 210,  440, 378,  465, 510],
+      [200,  92,  268, 182,  318, 302,  355, 420],
+      [422,  70,  462, 200,  490, 348,  510, 465],
+      [490,  78,  592, 162,  680, 270,  720, 378],
+      [220, 612,  420, 592,  600, 582,  748, 578],
+      [808, 165,  870, 290,  900, 400,  910, 490],
+      [148, 330,  218, 342,  298, 368,  352, 410],
     ];
 
-    function buildOutline(cx, cy, rx, ry) {
-      var pts = [];
-      function addSegs(segs, steps, isGyrus) {
-        segs.forEach(function(s) {
-          var path = samplePath(
-            cx+s[0]*rx, cy+s[1]*ry,
-            cx+s[2]*rx, cy+s[3]*ry,
-            cx+s[4]*rx, cy+s[5]*ry,
-            cx+s[6]*rx, cy+s[7]*ry, steps);
-          for (var i = 0; i < path.length; i += 2)
-            pts.push({ ox:path[i], oy:path[i+1], isGyrus:isGyrus, ph:Math.random()*Math.PI*2 });
-        });
+    function sampleCubic(seg, spacingU) {
+      var p0x=seg[0], p0y=seg[1], c1x=seg[2], c1y=seg[3],
+          c2x=seg[4], c2y=seg[5], p1x=seg[6], p1y=seg[7];
+      var STEPS = 120;
+      var xs = new Float32Array(STEPS), ys = new Float32Array(STEPS);
+      for (var i = 0; i < STEPS; i++) {
+        var t = (i + 1) / STEPS, mt = 1 - t;
+        xs[i] = mt*mt*mt*p0x + 3*mt*mt*t*c1x + 3*mt*t*t*c2x + t*t*t*p1x;
+        ys[i] = mt*mt*mt*p0y + 3*mt*mt*t*c1y + 3*mt*t*t*c2y + t*t*t*p1y;
       }
-      addSegs(OUTER, 22, false);
-      addSegs(GYRI,  11, true);
+      var pts = [[p0x, p0y]];
+      var dist = 0, next = spacingU, px = p0x, py = p0y;
+      for (var j = 0; j < STEPS; j++) {
+        var d = Math.sqrt((xs[j]-px)*(xs[j]-px) + (ys[j]-py)*(ys[j]-py));
+        dist += d;
+        while (dist >= next) {
+          var frac = 1 - (dist - next) / d;
+          pts.push([px + (xs[j]-px)*frac, py + (ys[j]-py)*frac]);
+          next += spacingU;
+        }
+        px = xs[j]; py = ys[j];
+      }
       return pts;
     }
 
-    /* ── Branch tree — pre-computed at init, never per-frame ─────
-       14 primary axons → 2-4 secondary each → 1 tertiary each.
-       Returns { all[], primary[] }
-    ──────────────────────────────────────────────────────────── */
-    function buildTree(cx, cy, rx, ry) {
-      var all = [], primary = [];
-      var NUM = 14;
-      for (var i = 0; i < NUM; i++) {
-        var ang  = (i / NUM) * Math.PI * 2 + (Math.random()-0.5)*0.20;
-        var lx   = rx * (0.70 + Math.random()*0.42);
-        var ly   = ry * (0.70 + Math.random()*0.42);
-        var ex   = cx + Math.cos(ang)*lx;
-        var ey   = cy + Math.sin(ang)*ly;
-        var c1x  = cx + Math.cos(ang-0.44)*lx*0.34;
-        var c1y  = cy + Math.sin(ang-0.44)*ly*0.34;
-        var c2x  = cx + Math.cos(ang+0.20)*lx*0.73;
-        var c2y  = cy + Math.sin(ang+0.20)*ly*0.73;
-        var path = samplePath(cx,cy, c1x,c1y, c2x,c2y, ex,ey, 32);
-        var b = { path:path, level:0, children:[], endX:ex, endY:ey };
-        all.push(b); primary.push(b);
-
-        var nSec = 2 + Math.floor(Math.random()*3);
-        for (var s = 0; s < nSec; s++) {
-          var sf   = 0.36 + s*(0.44/Math.max(nSec-1,1));
-          var si   = Math.floor(sf*31)*2;
-          var sx   = path[si], sy = path[si+1];
-          var sa   = ang + (s-(nSec-1)/2)*0.54 + (Math.random()-0.5)*0.22;
-          var sl   = Math.hypot(lx,ly)*0.50;
-          var sex  = sx + Math.cos(sa)*sl*0.90;
-          var sey  = sy + Math.sin(sa)*sl*0.90;
-          var sc1x = sx + Math.cos(sa-0.28)*sl*0.34;
-          var sc1y = sy + Math.sin(sa-0.28)*sl*0.34;
-          var sc2x = sx + Math.cos(sa+0.12)*sl*0.70;
-          var sc2y = sy + Math.sin(sa+0.12)*sl*0.70;
-          var spath= samplePath(sx,sy, sc1x,sc1y, sc2x,sc2y, sex,sey, 22);
-          var sb   = { path:spath, level:1, children:[], endX:sex, endY:sey };
-          all.push(sb); b.children.push(sb);
-
-          var ta   = sa + (Math.random()-0.5)*0.50;
-          var tl   = sl*0.52;
-          var tex  = sex + Math.cos(ta)*tl;
-          var tey  = sey + Math.sin(ta)*tl;
-          var tc1x = sex + Math.cos(ta-0.20)*tl*0.38;
-          var tc1y = sey + Math.sin(ta-0.20)*tl*0.38;
-          var tc2x = sex + Math.cos(ta     )*tl*0.72;
-          var tc2y = sey + Math.sin(ta     )*tl*0.72;
-          var tpath= samplePath(sex,sey, tc1x,tc1y, tc2x,tc2y, tex,tey, 16);
-          var tb2  = { path:tpath, level:2, children:[], endX:tex, endY:tey };
-          all.push(tb2); sb.children.push(tb2);
-        }
-      }
-      return { all:all, primary:primary };
+    function mapPt(nx, ny) {
+      var s = Math.min(W, H) * 0.85 / 1000;
+      return [nx * s + W * 0.50 - 505 * s,
+              ny * s + H * 0.50 - 410 * s];
     }
 
-    /* ── Particle distribution ───────────────────────────────── */
-    function buildParticles(tree, N, cx, cy, rx, ry) {
-      var ps = [];
-      var cN = Math.floor(N*0.40), bN = Math.floor(N*0.45), nN = N-cN-bN;
-      var baseR = Math.min(rx,ry);
+    var particles = [];
 
-      /* Core mass */
-      for (var i = 0; i < cN; i++) {
-        var a = Math.random()*Math.PI*2;
-        var r = Math.pow(Math.random(),0.5) * baseR * 0.32;
-        var x = cx+Math.cos(a)*r, y = cy+Math.sin(a)*r;
-        ps.push({ x:x,y:y, bx:x,by:y, vx:0,vy:0,
-          alpha:0.48+Math.random()*0.44, sz:1.8+Math.random()*3.0,
-          type:0, ph:Math.random()*Math.PI*2 });
-      }
+    function buildOutline() {
+      particles = [];
+      var s = Math.min(W, H) * 0.85 / 1000;
+      var spacingU = 4 / s;
 
-      /* Branch particles */
-      var totalW = 0;
-      tree.all.forEach(function(b){ b._w = b.level===0?3:b.level===1?2:1; totalW+=b._w; });
-      tree.all.forEach(function(b) {
-        var cnt = Math.floor((b._w/totalW)*bN);
-        var plen = b.path.length/2;
-        for (var i = 0; i < cnt; i++) {
-          var t2  = Math.pow(Math.random(),1.5);
-          var pi2 = Math.min(Math.floor(t2*(plen-1))*2, b.path.length-2);
-          var bx  = b.path[pi2]+(Math.random()-0.5)*2.5;
-          var by  = b.path[pi2+1]+(Math.random()-0.5)*2.5;
-          var isTerm = (pi2 >= b.path.length-4);
-          ps.push({ x:bx,y:by, bx:bx,by:by, vx:0,vy:0,
-            alpha:isTerm?0.72:0.26+Math.random()*0.34,
-            sz:isTerm?2.4:0.8+Math.random()*1.6,
-            type:1, level:b.level, isTerm:isTerm, ph:Math.random()*Math.PI*2 });
-        }
+      SILHOUETTE.forEach(function (seg) {
+        sampleCubic(seg, spacingU).forEach(function (pt) {
+          var m = mapPt(pt[0], pt[1]);
+          particles.push({ tx: m[0], ty: m[1], x: m[0], y: m[1],
+            phase: Math.random() * Math.PI * 2, type: 'sil',
+            a: 0.82 + Math.random() * 0.12 });
+        });
       });
 
-      /* Neural noise */
-      var noiseR = baseR*0.82;
-      for (var i = 0; i < nN; i++) {
-        var a2 = Math.random()*Math.PI*2, r2 = Math.random()*noiseR;
-        var x2 = cx+Math.cos(a2)*r2, y2 = cy+Math.sin(a2)*r2;
-        ps.push({ x:x2,y:y2, bx:x2,by:y2,
-          vx:(Math.random()-0.5)*0.18, vy:(Math.random()-0.5)*0.18,
-          alpha:0.05+Math.random()*0.08, sz:0.5+Math.random()*0.8,
-          type:2, ph:Math.random()*Math.PI*2 });
-      }
-      return ps;
-    }
-
-    /* ── Formula floaters ────────────────────────────────────── */
-    function buildFormulas(tree) {
-      var tips = tree.all.filter(function(b){ return b.level===2; });
-      return FORMULAS.map(function(txt, i) {
-        var tb = tips[i % tips.length];
-        var bx = tb.endX+(Math.random()-0.5)*26, by = tb.endY+(Math.random()-0.5)*18;
-        return { text:txt, x:bx,y:by, bx:bx,by:by,
-          vx:(Math.random()-0.5)*0.11, vy:(Math.random()-0.5)*0.11,
-          alpha:0.15, scale:1.0 };
+      GYRI.forEach(function (seg) {
+        sampleCubic(seg, spacingU * 1.6).forEach(function (pt) {
+          var m = mapPt(pt[0], pt[1]);
+          particles.push({ tx: m[0], ty: m[1], x: m[0], y: m[1],
+            phase: Math.random() * Math.PI * 2, type: 'gyrus',
+            a: 0.35 + Math.random() * 0.18 });
+        });
       });
     }
 
-    /* ── Per-canvas animation instance ──────────────────────── */
-    function launchBrain(canvas) {
-      if (!canvas) return;
-      var ctx = canvas.getContext('2d');
-      var W, H, st;
+    var t0 = performance.now();
 
-      function init() {
-        var parent = canvas.parentElement;
-        W = canvas.width  = canvas.offsetWidth  || (parent ? parent.offsetWidth  : 400);
-        H = canvas.height = canvas.offsetHeight || (parent ? parent.offsetHeight : 320);
-        var cx = W*0.5, cy = H*0.5;
-        var base = Math.min(W, H);
-        var rx = base*0.40, ry = base*0.38;
-        var N    = window.HeliuxPerf.getCount(15000, 10000, 5000);
-        var tree = buildTree(cx, cy, rx, ry);
-        st = {
-          cx:cx, cy:cy, rx:rx, ry:ry,
-          tree:     tree,
-          outline:  buildOutline(cx, cy, rx*1.10, ry*1.08),
-          particles:buildParticles(tree, N, cx, cy, rx, ry),
-          formulas: buildFormulas(tree),
-          pulses:   [],
-          pulseTimer:0, nextPulse:900+Math.random()*500,
-          holdTimer:0,  holding:false
-        };
-      }
-
-      init();
-      window.addEventListener('resize', init);
-
-      /* Pulse helpers */
-      function firePulse() {
-        var pb = st.tree.primary;
-        var b  = pb[Math.floor(Math.random()*pb.length)];
-        if (b) st.pulses.push({ branch:b, t:0, bright:1.0 });
-      }
-      function stepPulses(dt, spd) {
-        var next = [];
-        st.pulses.forEach(function(p) {
-          p.t += 0.013 * spd * (dt/16);
-          if (p.t >= 1) {
-            p.branch.children.forEach(function(child) {
-              if (Math.random() < 0.78)
-                next.push({ branch:child, t:0, bright:p.bright*0.74 });
-            });
-          } else {
-            next.push(p);
-          }
-        });
-        st.pulses = next;
-      }
-
-      var lastT = 0;
-      function frame(now) {
-        requestAnimationFrame(frame);
-        if (!st) return;
-        var dt = Math.min(now - lastT, 50);
-        lastT  = now;
-        var ts = now * 0.001;
-
-        var rect = canvas.getBoundingClientRect();
-        var mx   = window.HeliuxMouse.x - rect.left;
-        var my   = window.HeliuxMouse.y - rect.top;
-        var mdn  = window.HeliuxMouse.down;
-
-        if (mdn) { st.holdTimer += dt; if (st.holdTimer > 500) st.holding = true; }
-        else      { st.holdTimer  = 0; st.holding = false; }
-
-        var centerDist = Math.hypot(mx-st.cx, my-st.cy);
-        var pMult = 1 + Math.max(0, 1-centerDist/100)*2.2;
-
-        st.pulseTimer += dt;
-        if (st.pulseTimer >= st.nextPulse) {
-          st.pulseTimer = 0;
-          st.nextPulse  = (800+Math.random()*600)/pMult;
-          firePulse();
-        }
-        stepPulses(dt, pMult);
-
-        ctx.clearRect(0, 0, W, H);
-
-        /* Axon lines */
-        st.tree.all.forEach(function(b) {
-          ctx.globalAlpha = b.level===0?0.16:b.level===1?0.10:0.06;
-          ctx.strokeStyle = b.level===0?'#4a9eff':b.level===1?'#2a5a9f':'#1a3a6a';
-          ctx.lineWidth   = b.level===0?0.8:0.4;
-          ctx.beginPath();
-          ctx.moveTo(b.path[0], b.path[1]);
-          for (var i=2; i<b.path.length; i+=2) ctx.lineTo(b.path[i], b.path[i+1]);
-          ctx.stroke();
-        });
-
-        /* Particles */
-        var bloomR = W > 600 ? 160 : 120;
-        st.particles.forEach(function(p) {
-          var dx = mx-p.x, dy = my-p.y;
-          var d  = Math.sqrt(dx*dx+dy*dy) || 1;
-
-          if (d < 80 && p.type !== 2) {
-            var f = (1-d/80);
-            if (st.holding) { p.vx -= dx/d*f*0.48; p.vy -= dy/d*f*0.48; }
-            else             { p.vx += dx/d*f*0.07; p.vy += dy/d*f*0.07; }
-          }
-          if (p.type !== 2) { p.vx += (p.bx-p.x)*0.042; p.vy += (p.by-p.y)*0.042; }
-          else               { p.vx += (Math.random()-0.5)*0.01; p.vy += (Math.random()-0.5)*0.01; }
-          p.vx *= 0.87; p.vy *= 0.87;
-          p.x  += p.vx; p.y  += p.vy;
-
-          var bloom = d < bloomR ? (1-d/bloomR)*0.38 : 0;
-          var a     = Math.min(1, p.alpha+bloom);
-          var sp    = p.type===2 ? SP_DARK : SP_BLUE;
-          var sz    = p.sz * (p.type===2?3:4);
-          ctx.globalAlpha = a;
-          ctx.drawImage(sp, p.x-sz/2, p.y-sz/2, sz, sz);
-        });
-
-        /* Outline — bright, breathing */
-        var breathe = Math.sin(ts*0.72)*1.7;
-        st.outline.forEach(function(op, idx) {
-          var osc = Math.sin(ts*1.1+op.ph)*1.5;
-          var ox  = op.ox + Math.cos(op.ph)*osc;
-          var oy  = op.oy + Math.sin(op.ph)*osc + breathe*0.22;
-          ctx.globalAlpha = op.isGyrus ? 0.44 : 0.75;
-          ctx.drawImage(SP_OUTLINE, ox-4, oy-4, 8, 8);
-        });
-
-        /* Pulses */
-        st.pulses.forEach(function(p) {
-          var path = p.branch.path;
-          var plen = path.length/2;
-          var idx  = Math.min(Math.floor(p.t*(plen-1)), plen-2);
-          for (var ci = -4; ci <= 4; ci++) {
-            var ii  = Math.max(0, Math.min(plen-1, idx+ci));
-            var px2 = path[ii*2], py2 = path[ii*2+1];
-            var f   = 1 - Math.abs(ci)/5;
-            ctx.globalAlpha = p.bright*f*0.90;
-            var sz = 5+f*7;
-            ctx.drawImage(SP_WHITE, px2-sz/2, py2-sz/2, sz, sz);
-          }
-          if (p.t > 0.91 && p.branch.children.length===0) {
-            var bf = (p.t-0.91)/0.09;
-            ctx.globalAlpha = bf*p.bright*0.85;
-            ctx.drawImage(SP_BLOOM, path[path.length-2]-12, path[path.length-1]-12, 24, 24);
-          }
-        });
-
-        /* Formulas */
-        var fR = W > 600 ? 200 : 150;
-        ctx.font      = W > 600 ? '11px monospace' : '8px monospace';
-        ctx.fillStyle = '#7ab8ff';
-        st.formulas.forEach(function(f) {
-          f.vx += (Math.random()-0.5)*0.006+(f.bx-f.x)*0.004;
-          f.vy += (Math.random()-0.5)*0.006+(f.by-f.y)*0.004;
-          f.vx *= 0.95; f.vy *= 0.95;
-          f.x  += f.vx; f.y  += f.vy;
-          var dx2 = mx-f.x, dy2 = my-f.y;
-          var d2  = Math.sqrt(dx2*dx2+dy2*dy2)||1;
-          var near = d2 < fR;
-          f.alpha = f.alpha+((near?0.85:0.15)-f.alpha)*0.06;
-          f.scale = f.scale+((near?1.2:1.0)-f.scale)*0.07;
-          ctx.save();
-          ctx.translate(f.x, f.y);
-          ctx.scale(f.scale, f.scale);
-          ctx.globalAlpha = f.alpha;
-          ctx.fillText(f.text, 0, 0);
-          ctx.restore();
-        });
-
-        ctx.globalAlpha = 1;
-      }
-
+    function frame(now) {
       requestAnimationFrame(frame);
+      ctx.clearRect(0, 0, W, H);
+
+      var elapsed = (now - t0) * 0.001;
+      var mo = window.HeliuxMouse || { x: -9999, y: -9999 };
+      var r  = canvas.getBoundingClientRect();
+      var mx = mo.x - r.left, my = mo.y - r.top;
+
+      for (var i = 0; i < particles.length; i++) {
+        var p = particles[i];
+        var dx = p.tx - W * 0.50, dy = p.ty - H * 0.50;
+        var len = Math.sqrt(dx*dx + dy*dy) || 1;
+        var osc = Math.sin(elapsed * 0.75 + p.phase) * 1.8;
+        p.x = p.tx + (dx / len) * osc;
+        p.y = p.ty + (dy / len) * osc;
+
+        var md = Math.sqrt((p.x-mx)*(p.x-mx) + (p.y-my)*(p.y-my));
+        var bloom = md < 120 ? (1 - md / 120) * 0.38 : 0;
+
+        ctx.globalAlpha = Math.min(1, p.a + bloom);
+        ctx.fillStyle   = p.type === 'sil' ? '#7ab8ff' : '#4a9eff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.type === 'sil' ? 1.3 : 0.9, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
     }
 
-    /* ── Boot ───────────────────────────────────────────────── */
-    window.HeliuxPerf.onReady(function () {
-      launchBrain(document.getElementById('canvas-brain'));
-      launchBrain(document.getElementById('overlay-canvas-brain'));
-    });
-
+    resize();
+    window.addEventListener('resize', resize);
+    requestAnimationFrame(frame);
   }());
   </script>
 
