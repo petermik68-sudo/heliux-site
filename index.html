@@ -95,7 +95,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: transparent;
+      background: linear-gradient(to bottom, transparent 60%, #444444 100%);
       overflow: hidden;
     }
 
@@ -729,6 +729,7 @@
     if (saved === 'on') enabled = true;
 
     var heroNoise = null;
+    var heroNoiseStarted = false;
 
     function initAudio() {
       if (audioCtx) return;
@@ -737,9 +738,8 @@
       masterGain.gain.value = 0;
       masterGain.connect(audioCtx.destination);
 
-      // Hero idle: soft filtered white noise, ~3% level per brief
       var rate   = audioCtx.sampleRate;
-      var bufLen = rate * 3; // 3-second looping buffer
+      var bufLen = rate * 3;
       var buf    = audioCtx.createBuffer(1, bufLen, rate);
       var data   = buf.getChannelData(0);
       for (var i = 0; i < bufLen; i++) { data[i] = Math.random() * 2 - 1; }
@@ -754,12 +754,11 @@
       lp.Q.value         = 0.7;
 
       var heroGain = audioCtx.createGain();
-      heroGain.gain.value = 0.03;
+      heroGain.gain.value = 0.12;
 
       heroNoise.connect(lp);
       lp.connect(heroGain);
       heroGain.connect(masterGain);
-      heroNoise.start(0);
     }
 
     function setVolume(vol, durationMs) {
@@ -783,7 +782,13 @@
 
         if (enabled) {
           initAudio();
-          var startSound = function () { setVolume(0.15, 400); };
+          var startSound = function () {
+            if (!heroNoiseStarted) {
+              heroNoise.start(0);
+              heroNoiseStarted = true;
+            }
+            setVolume(1.0, 400);
+          };
           if (audioCtx.state === 'suspended') {
             audioCtx.resume().then(startSound);
           } else {
