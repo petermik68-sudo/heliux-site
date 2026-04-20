@@ -1,4 +1,4 @@
-﻿<!-- v10 -->
+<!-- v11 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,6 +11,8 @@
     :root {
       --bg: transparent;
       --blue: #4a9eff;
+      --green: #32c850;
+      --amber: #ff8c00;
       --white: #ffffff;
       --text-muted: #a0a8b8;
     }
@@ -24,7 +26,7 @@
       overflow-x: hidden;
     }
 
-    /* â”€â”€ NAV â”€â”€ */
+    /* ── NAV ── */
     nav {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -58,7 +60,32 @@
     }
     nav a.contact-link:hover { color: var(--white); }
 
-    /* â”€â”€ HERO â”€â”€ */
+    /* ── SOUND TOGGLE ── */
+    #sound-toggle {
+      position: absolute;
+      bottom: 7px;
+      left: 40px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: var(--text-muted);
+      transition: color 0.2s;
+      line-height: 0;
+    }
+    #sound-toggle:hover { color: var(--white); }
+    #sound-toggle svg { width: 28px; height: 14px; display: block; }
+    #sound-toggle .wave-line { display: none; }
+    #sound-toggle .flat-line { display: block; }
+    #sound-toggle.sound-on .wave-line { display: block; animation: waveAnim 1.2s linear infinite; }
+    #sound-toggle.sound-on .flat-line { display: none; }
+
+    @keyframes waveAnim {
+      0%   { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: -40; }
+    }
+
+    /* ── HERO ── */
     #hero {
       position: relative;
       width: 100%;
@@ -79,6 +106,7 @@
       height: 100%;
       display: block;
       background: transparent !important;
+      z-index: 0;
     }
 
     .hero-content {
@@ -154,7 +182,7 @@
       50%       { transform: translateX(-50%) translateY(6px); }
     }
 
-    /* â”€â”€ FOCUS SECTION â”€â”€ */
+    /* ── FOCUS SECTION ── */
     #focus {
       background: linear-gradient(to bottom, #444444 0%, #111111 100%);
       padding: 120px 48px;
@@ -188,24 +216,60 @@
       margin: 0 auto;
     }
 
+    /* ── CARD MECHANIC ── */
     .focus-card {
-      background: rgba(255,255,255,0.03);
+      position: relative;
+      overflow: hidden;
       border: 1px solid rgba(255,255,255,0.06);
+      min-height: 320px;
+      cursor: pointer;
+      transition: border-color 0.4s ease, opacity 0.4s ease;
+    }
+
+    /* Per-pillar dark tint base (visible before canvas animations) */
+    #card-brain { background: #060c18; }
+    #card-tree  { background: #060e06; }
+    #card-globe { background: #140a00; }
+
+    /* Hover — border brightens to pillar colour */
+    #card-brain:hover { border-color: var(--blue); }
+    #card-tree:hover  { border-color: var(--green); }
+    #card-globe:hover { border-color: var(--amber); }
+
+    /* Hover — card icon picks up pillar colour */
+    #card-brain:hover .card-icon { color: var(--blue); }
+    #card-tree:hover  .card-icon { color: var(--green); }
+    #card-globe:hover .card-icon { color: var(--amber); }
+
+    /* Dim siblings when one card is hovered */
+    .focus-grid.has-hover .focus-card:not(.is-hovered) { opacity: 0.7; }
+
+    /* Card canvas — fills card behind content */
+    .card-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+
+    /* Card content — sits above canvas with dark readability overlay */
+    .card-content {
+      position: relative;
+      z-index: 2;
       padding: 48px 40px;
-      transition: background 0.25s, border-color 0.25s;
+      background: rgba(0,0,0,0.55);
+      height: 100%;
     }
-    .focus-card:hover {
-      background: rgba(74,158,255,0.05);
-      border-color: rgba(74,158,255,0.2);
-    }
-    .focus-card:hover .card-icon { color: var(--blue); }
 
     .card-icon {
       width: 36px;
       height: 36px;
       color: rgba(255,255,255,0.25);
       margin-bottom: 24px;
-      transition: color 0.25s;
+      display: block;
+      transition: color 0.4s ease;
     }
 
     .focus-card h3 {
@@ -222,7 +286,97 @@
       color: var(--text-muted);
     }
 
-    /* â”€â”€ FOOTER â”€â”€ */
+    /* ── FULLSCREEN OVERLAYS ── */
+    .fullscreen-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100dvh;
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97);
+      transition: opacity 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                  transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fullscreen-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: scale(1);
+    }
+
+    /* Per-pillar overlay background */
+    #overlay-brain { background: #050e20; }
+    #overlay-tree  { background: #051405; }
+    #overlay-globe { background: #180c00; }
+
+    .overlay-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .overlay-ui {
+      position: absolute;
+      inset: 0;
+      padding: 36px 48px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .overlay-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .overlay-pillar-name {
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    #overlay-brain .overlay-pillar-name { color: var(--blue); }
+    #overlay-tree  .overlay-pillar-name { color: var(--green); }
+    #overlay-globe .overlay-pillar-name { color: var(--amber); }
+
+    .overlay-tagline {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 480px;
+      line-height: 1.5;
+    }
+
+    .overlay-close {
+      pointer-events: all;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--white);
+      font-size: 1.1rem;
+      line-height: 1;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .overlay-close:hover { background: rgba(255,255,255,0.16); }
+
+    /* ── FOOTER ── */
     footer {
       background: var(--bg);
       padding: 40px 48px;
@@ -234,12 +388,14 @@
     footer .logo { font-size: 1.1rem; }
     footer p { font-size: 0.8rem; color: rgba(255,255,255,0.25); }
 
-    /* â”€â”€ RESPONSIVE â”€â”€ */
+    /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
       nav { padding: 18px 24px; }
+      #sound-toggle { left: 24px; }
       #focus { padding: 80px 24px; }
       footer { padding: 32px 24px; flex-direction: column; gap: 12px; text-align: center; }
       .focus-grid { grid-template-columns: 1fr; gap: 2px; }
+      .overlay-ui { padding: 24px; }
     }
   </style>
 </head>
@@ -248,6 +404,18 @@
   <!-- NAV -->
   <nav>
     <a href="#" class="logo"><canvas id="logo-canvas" width="500" height="300" aria-label="Heliux"></canvas></a>
+
+    <!-- Sound toggle — off by default, initialises Web Audio on first click -->
+    <button id="sound-toggle" aria-label="Toggle sound">
+      <svg viewBox="0 0 28 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Animated waveform (visible when sound ON) -->
+        <polyline class="wave-line" stroke-dasharray="40" stroke-dashoffset="0"
+          points="0,7 2.5,2 5,12 7.5,1 10,13 12.5,3 15,10 17.5,5 20,9 22.5,4 25,10 27.5,7 28,7"/>
+        <!-- Flat line (visible when sound OFF) -->
+        <line class="flat-line" x1="0" y1="7" x2="28" y2="7"/>
+      </svg>
+    </button>
+
     <a href="#contact" class="contact-link">Contact</a>
   </nav>
 
@@ -269,41 +437,96 @@
     </div>
   </section>
 
-  <!-- FOCUS -->
+  <!-- FOCUS — each card is a live canvas container -->
   <section id="focus">
     <p class="section-label">What we do</p>
     <h2>Our Core Focus</h2>
 
-    <div class="focus-grid">
-      <div class="focus-card">
-        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
-        </svg>
-        <h3>Emerging Tech</h3>
-        <p>We help organizations cut through the noise of emerging technology. From AI-assisted analysis to automation and digital infrastructure, we identify what actually moves the needle for your operation, build the case for it, and see it through implementation. Our advice comes from hands-on use of the same tools we recommend.</p>
+    <div class="focus-grid" id="focus-grid">
+
+      <!-- Brain / Emerging Tech -->
+      <div class="focus-card" id="card-brain" data-pillar="brain">
+        <canvas class="card-canvas" id="canvas-brain"></canvas>
+        <div class="card-content">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
+          </svg>
+          <h3>Emerging Tech</h3>
+          <p>We help organizations cut through the noise of emerging technology. From AI-assisted analysis to automation and digital infrastructure, we identify what actually moves the needle for your operation, build the case for it, and see it through implementation. Our advice comes from hands-on use of the same tools we recommend.</p>
+        </div>
       </div>
 
-      <div class="focus-card">
-        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-        <h3>Renewable Energy</h3>
-        <p>Solar and sustainable power are financial and operational decisions as much as environmental ones. We provide independent, vendor-neutral assessments of solar-powered systems, feasibility validation, and design support grounded in real field experience. We work for you, not the vendor.</p>
+      <!-- Tree / Renewable Energy -->
+      <div class="focus-card" id="card-tree" data-pillar="tree">
+        <canvas class="card-canvas" id="canvas-tree"></canvas>
+        <div class="card-content">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <h3>Renewable Energy</h3>
+          <p>Solar and sustainable power are financial and operational decisions as much as environmental ones. We provide independent, vendor-neutral assessments of solar-powered systems, feasibility validation, and design support grounded in real field experience. We work for you, not the vendor.</p>
+        </div>
       </div>
 
-      <div class="focus-card">
-        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-        </svg>
-        <h3>Business Strategy</h3>
-        <p>We have taken local businesses to national scale and helped companies from Europe and Asia successfully enter the North American market. Our approach combines deep market research, sound financial modelling, and access to funding and venture capital networks. No pitch deck fluff. A plan built to execute.</p>
+      <!-- Globe / Business Strategy -->
+      <div class="focus-card" id="card-globe" data-pillar="globe">
+        <canvas class="card-canvas" id="canvas-globe"></canvas>
+        <div class="card-content">
+          <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <h3>Business Strategy</h3>
+          <p>We have taken local businesses to national scale and helped companies from Europe and Asia successfully enter the North American market. Our approach combines deep market research, sound financial modelling, and access to funding and venture capital networks. No pitch deck fluff. A plan built to execute.</p>
+        </div>
       </div>
+
     </div>
   </section>
+
+  <!-- FULLSCREEN OVERLAYS — hidden by default, activated on card click -->
+
+  <div class="fullscreen-overlay" id="overlay-brain" data-pillar="brain">
+    <canvas class="overlay-canvas" id="overlay-canvas-brain"></canvas>
+    <div class="overlay-ui">
+      <div class="overlay-header">
+        <div>
+          <span class="overlay-pillar-name">Emerging Tech</span>
+          <p class="overlay-tagline">Navigating the frontier of AI, automation, and digital transformation — identifying what's signal and what's noise.</p>
+        </div>
+        <button class="overlay-close" data-target="brain" aria-label="Close">&#x2715;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fullscreen-overlay" id="overlay-tree" data-pillar="tree">
+    <canvas class="overlay-canvas" id="overlay-canvas-tree"></canvas>
+    <div class="overlay-ui">
+      <div class="overlay-header">
+        <div>
+          <span class="overlay-pillar-name">Renewable Energy</span>
+          <p class="overlay-tagline">Independent, vendor-neutral solar and sustainable power assessments grounded in real field experience.</p>
+        </div>
+        <button class="overlay-close" data-target="tree" aria-label="Close">&#x2715;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fullscreen-overlay" id="overlay-globe" data-pillar="globe">
+    <canvas class="overlay-canvas" id="overlay-canvas-globe"></canvas>
+    <div class="overlay-ui">
+      <div class="overlay-header">
+        <div>
+          <span class="overlay-pillar-name">Business Strategy</span>
+          <p class="overlay-tagline">From local to national scale, and from Europe and Asia into North America — a plan built to execute.</p>
+        </div>
+        <button class="overlay-close" data-target="globe" aria-label="Close">&#x2715;</button>
+      </div>
+    </div>
+  </div>
 
   <!-- CONTACT -->
   <div id="contact" style="background: linear-gradient(to bottom, #111111 0%, #0a0a0a 100%);padding:100px 48px;text-align:center;border-top: none;">
@@ -319,7 +542,9 @@
     <p>&copy; 2026 Heliux Consulting. All rights reserved.</p>
   </footer>
 
-  <!-- LOGO CANVAS CROSSFADE -->
+  <!-- ═══════════════════════════════════════════════════════════
+       LOGO CANVAS CROSSFADE — DO NOT MODIFY
+  ═══════════════════════════════════════════════════════════ -->
   <script>
   (function () {
     var SRCS = [
@@ -405,7 +630,7 @@
         ctx.globalCompositeOperation = 'source-over';
 
         if (t >= 1) {
-          // Transition complete â€” commit and start holding
+          // Transition complete — commit and start holding
           currentIdx    = nextIdx;
           transitioning = false;
           holdStart     = now;
@@ -418,268 +643,372 @@
   }());
   </script>
 
-  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-       PARTICLE ANIMATION
-       Pure HTML5 Canvas 2D â€” no WebGL, no libraries whatsoever.
+  <!-- ═══════════════════════════════════════════════════════════
+       HELIUX PERF — adaptive FPS scaler shared by all animations
+  ═══════════════════════════════════════════════════════════ -->
+  <script>
+  window.HeliuxPerf = (function () {
+    var tier = 2; // default before benchmark completes
+    var resolved = false;
+    var callbacks = [];
 
-       How it works:
-       - A tiny 20Ã—20 glow sprite is pre-rendered once to an
-         offscreen canvas using a radial gradient.  Every frame
-         we stamp that sprite at each particle position with
-         drawImage(), which is very fast.
-       - Each particle stores a current (px, py) and a target
-         (tx, ty).  We lerp px/py toward the target each frame,
-         giving the smooth morphing effect.
-       - The canvas is cleared with a semi-transparent fill
-         instead of clearRect, producing a fading trail.
-       - Six shape functions write new targets into tx[]/ty[].
-         A timer cycles through them every ~4 seconds.
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    function benchmark() {
+      var frames = 0;
+      var start = performance.now();
+      function tick() {
+        frames++;
+        if (frames < 60) {
+          requestAnimationFrame(tick);
+        } else {
+          var elapsed = performance.now() - start;
+          var fps = frames / (elapsed / 1000);
+          if      (fps >= 55) tier = 1;
+          else if (fps >= 45) tier = 2;
+          else                tier = 3;
+          resolved = true;
+          callbacks.forEach(function (cb) { cb(tier); });
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    // Touch devices bias to Tier 2 before benchmark resolves
+    if ('ontouchstart' in window) tier = 2;
+
+    benchmark();
+
+    return {
+      onReady:   function (cb) { if (resolved) cb(tier); else callbacks.push(cb); },
+      getTier:   function ()   { return tier; },
+      getCount:  function (t1, t2, t3) {
+        if (tier === 1) return t1;
+        if (tier === 2) return t2;
+        return t3;
+      }
+    };
+  }());
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HELIUX MOUSE — global pointer tracker (mouse + touch)
+  ═══════════════════════════════════════════════════════════ -->
+  <script>
+  window.HeliuxMouse = { x: 0, y: 0, down: false };
+
+  window.addEventListener('mousemove', function (e) {
+    window.HeliuxMouse.x = e.clientX;
+    window.HeliuxMouse.y = e.clientY;
+  });
+  window.addEventListener('mousedown', function () { window.HeliuxMouse.down = true; });
+  window.addEventListener('mouseup',   function () { window.HeliuxMouse.down = false; });
+
+  window.addEventListener('touchmove', function (e) {
+    window.HeliuxMouse.x = e.touches[0].clientX;
+    window.HeliuxMouse.y = e.touches[0].clientY;
+  }, { passive: true });
+
+  window.addEventListener('touchstart', function (e) {
+    window.HeliuxMouse.x = e.touches[0].clientX;
+    window.HeliuxMouse.y = e.touches[0].clientY;
+    window.HeliuxMouse.down = false;
+  }, { passive: true });
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HELIUX SOUND — shell architecture, no synthesis yet.
+       Actual pillar soundscapes added in the Polish pass (Step 5).
+  ═══════════════════════════════════════════════════════════ -->
+  <script>
+  window.HeliuxSound = (function () {
+    var audioCtx  = null;
+    var masterGain = null;
+    var enabled   = false;
+    var STORAGE_KEY = 'heliux_sound';
+
+    // Restore saved preference (still requires gesture to actually start)
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === 'on') enabled = true;
+
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0;
+      masterGain.connect(audioCtx.destination);
+    }
+
+    function setVolume(vol, durationMs) {
+      if (!masterGain) return;
+      var t = audioCtx.currentTime;
+      masterGain.gain.linearRampToValueAtTime(vol, t + (durationMs / 1000));
+    }
+
+    // Pillar volume targets (populated when pillar animations register themselves)
+    var pillarNodes = {};
+
+    var btn = document.getElementById('sound-toggle');
+    if (btn) {
+      // Reflect saved state on button immediately
+      if (enabled) btn.classList.add('sound-on');
+
+      btn.addEventListener('click', function () {
+        enabled = !enabled;
+        localStorage.setItem(STORAGE_KEY, enabled ? 'on' : 'off');
+        btn.classList.toggle('sound-on', enabled);
+
+        if (enabled) {
+          initAudio(); // handles autoplay policy — gesture already happened
+          if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+          setVolume(0.15, 400);
+        } else {
+          setVolume(0, 300);
+        }
+      });
+    }
+
+    return {
+      isEnabled:    function ()    { return enabled; },
+      getContext:   function ()    { return audioCtx; },
+      getMaster:    function ()    { return masterGain; },
+      // Called by each pillar animation when it initialises (Steps 2–4)
+      registerPillar: function (name, gainNode) { pillarNodes[name] = gainNode; },
+      // Crossfade to a pillar soundscape
+      activatePillar: function (name, durationMs) {
+        if (!enabled || !audioCtx) return;
+        Object.keys(pillarNodes).forEach(function (k) {
+          var target = k === name ? 0.3 : 0;
+          var t = audioCtx.currentTime;
+          pillarNodes[k].gain.linearRampToValueAtTime(target, t + (durationMs || 600) / 1000);
+        });
+      },
+      deactivatePillar: function (durationMs) {
+        if (!audioCtx) return;
+        var t = audioCtx.currentTime;
+        Object.keys(pillarNodes).forEach(function (k) {
+          pillarNodes[k].gain.linearRampToValueAtTime(0, t + (durationMs || 500) / 1000);
+        });
+      }
+    };
+  }());
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CARD MECHANIC — hover dimming, fullscreen expand/collapse.
+       Card canvases receive placeholder dark fills until pillar
+       animations are wired in Steps 2–4.
+  ═══════════════════════════════════════════════════════════ -->
+  <script>
+  (function () {
+    'use strict';
+
+    /* ── Card canvas placeholder fills ──────────────────────────
+       Dark pillar-tinted gradient drawn once (and on resize).
+       Replaced by real animations in Steps 2–4.
+    ─────────────────────────────────────────────────────────── */
+    var cardCfg = [
+      { id: 'canvas-brain', top: '#0a1428', bot: '#040810' },
+      { id: 'canvas-tree',  top: '#0a1e0a', bot: '#040804' },
+      { id: 'canvas-globe', top: '#201000', bot: '#100800' }
+    ];
+
+    cardCfg.forEach(function (cfg) {
+      var c = document.getElementById(cfg.id);
+      if (!c) return;
+      var ctx = c.getContext('2d');
+      function paint() {
+        c.width  = c.offsetWidth  || c.parentElement.offsetWidth  || 300;
+        c.height = c.offsetHeight || c.parentElement.offsetHeight || 320;
+        var g = ctx.createLinearGradient(0, 0, 0, c.height);
+        g.addColorStop(0, cfg.top);
+        g.addColorStop(1, cfg.bot);
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, c.width, c.height);
+      }
+      paint();
+      window.addEventListener('resize', paint);
+    });
+
+    /* ── Hover dimming ───────────────────────────────────────── */
+    var grid  = document.getElementById('focus-grid');
+    var cards = document.querySelectorAll('.focus-card');
+
+    cards.forEach(function (card) {
+      card.addEventListener('mouseenter', function () {
+        grid.classList.add('has-hover');
+        card.classList.add('is-hovered');
+      });
+      card.addEventListener('mouseleave', function () {
+        card.classList.remove('is-hovered');
+        grid.classList.remove('has-hover');
+      });
+      // Touch: treat touchstart as hover-enter, touchend as hover-leave
+      card.addEventListener('touchstart', function () {
+        grid.classList.add('has-hover');
+        card.classList.add('is-hovered');
+      }, { passive: true });
+      card.addEventListener('touchend', function () {
+        card.classList.remove('is-hovered');
+        grid.classList.remove('has-hover');
+      }, { passive: true });
+    });
+
+    /* ── Fullscreen expand / collapse ───────────────────────── */
+    var activeOverlay = null;
+
+    function openOverlay(pillar) {
+      var overlay = document.getElementById('overlay-' + pillar);
+      if (!overlay) return;
+      activeOverlay = pillar;
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      window.HeliuxSound.activatePillar(pillar, 600);
+    }
+
+    function closeOverlay() {
+      if (!activeOverlay) return;
+      var overlay = document.getElementById('overlay-' + activeOverlay);
+      if (overlay) overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      window.HeliuxSound.deactivatePillar(500);
+      activeOverlay = null;
+    }
+
+    // Card click → open overlay
+    cards.forEach(function (card) {
+      card.addEventListener('click', function () {
+        openOverlay(card.dataset.pillar);
+      });
+    });
+
+    // Close buttons inside overlays
+    document.querySelectorAll('.overlay-close').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        closeOverlay();
+      });
+    });
+
+    // Escape key closes active overlay
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeOverlay();
+    });
+  }());
+  </script>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HERO AMBIENT DRIFT
+       Replaces the old shape-morphing particle system.
+       Very slow, low-opacity particles drift across the hero
+       canvas — non-distracting background texture.
+       The hero is no longer the main visual event; the cards are.
+  ═══════════════════════════════════════════════════════════ -->
   <script>
   (function () {
     'use strict';
 
     var canvas = document.getElementById('canvas-bg');
     var ctx    = canvas.getContext('2d');
+    var W, H;
 
-    /* â”€â”€ Viewport dimensions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-    var W, H, CX, CY;
     function resize() {
-      W  = canvas.width  = canvas.offsetWidth;
-      H  = canvas.height = canvas.offsetHeight;
-      CX = W / 2;
-      CY = H / 2;
+      W = canvas.width  = canvas.offsetWidth;
+      H = canvas.height = canvas.offsetHeight;
     }
     resize();
-    window.addEventListener('resize', function () { resize(); applyShape(); });
+    window.addEventListener('resize', resize);
 
-    /* â”€â”€ Pre-render a single glow dot to an offscreen canvas â”€â”€â”€â”€ */
-    var GR = 10;                        // glow radius in px
-    var GS = GR * 2;                    // sprite canvas side length
+    /* Pre-render a small soft glow dot */
+    var GR = 5;
+    var GS = GR * 2;
     var sprite = document.createElement('canvas');
     sprite.width = sprite.height = GS;
-    var sg   = sprite.getContext('2d');
-    var grad = sg.createRadialGradient(GR, GR, 0, GR, GR, GR);
-    grad.addColorStop(0.00, 'rgba(230, 245, 255, 1.00)');  // bright white-blue core
-    grad.addColorStop(0.18, 'rgba(100, 185, 255, 0.85)');  // mid blue
-    grad.addColorStop(0.50, 'rgba( 50, 130, 255, 0.35)');  // soft halo
-    grad.addColorStop(1.00, 'rgba( 20,  70, 255, 0.00)');  // transparent edge
-    sg.fillStyle = grad;
-    sg.fillRect(0, 0, GS, GS);
+    var sg = sprite.getContext('2d');
 
-    // Spectrum colors matching logo sequence
     var SPECTRUM = [
-      [74,  158, 255],  // blue   - v2  index 0
-      [180, 80,  255],  // purple - v3  index 1
-      [50,  200, 80 ],  // green  - v4  index 2
-      [255, 140, 0  ],  // orange - v5  index 3
-      [0,   200, 200]   // teal   - v6  index 4
+      [74,  158, 255],  // blue   (logo v2)
+      [180, 80,  255],  // purple (logo v3)
+      [50,  200, 80 ],  // green  (logo v4)
+      [255, 140, 0  ],  // orange (logo v5)
+      [0,   200, 200]   // teal   (logo v6)
     ];
-    var currentColor = 0;
 
-    function updateSpriteColor(rgb) {
+    function buildSprite(r, g, b) {
       sg.clearRect(0, 0, GS, GS);
-      var g = sg.createRadialGradient(GR, GR, 0, GR, GR, GR);
-      g.addColorStop(0.00, 'rgba(255,255,255,1.00)');
-      g.addColorStop(0.18, 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.85)');
-      g.addColorStop(0.50, 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.35)');
-      g.addColorStop(1.00, 'rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+',0.00)');
-      sg.fillStyle = g;
+      var grad = sg.createRadialGradient(GR, GR, 0, GR, GR, GR);
+      grad.addColorStop(0.00, 'rgba(255,255,255,0.90)');
+      grad.addColorStop(0.25, 'rgba(' + r + ',' + g + ',' + b + ',0.55)');
+      grad.addColorStop(0.70, 'rgba(' + r + ',' + g + ',' + b + ',0.15)');
+      grad.addColorStop(1.00, 'rgba(' + r + ',' + g + ',' + b + ',0.00)');
+      sg.fillStyle = grad;
       sg.fillRect(0, 0, GS, GS);
     }
+    buildSprite(74, 158, 255); // start with blue
 
-    // Sync particle color smoothly per frame using logoState interpolation
-    function syncParticleColor() {
+    /* Sync sprite colour to logoState each frame */
+    var lastSpriteIdx = -1;
+    function syncColor() {
       var ls = window.logoState;
-      if (ls) {
-        var c1 = SPECTRUM[ls.idx % SPECTRUM.length];
-        if (ls.transitioning && ls.nextIdx !== undefined) {
-          var c2 = SPECTRUM[ls.nextIdx % SPECTRUM.length];
-          var t  = ls.t;
-          var r  = Math.round(c1[0] + (c2[0] - c1[0]) * t);
-          var g  = Math.round(c1[1] + (c2[1] - c1[1]) * t);
-          var b  = Math.round(c1[2] + (c2[2] - c1[2]) * t);
-          updateSpriteColor([r, g, b]);
-        } else {
-          updateSpriteColor(c1);
-        }
+      if (!ls) return;
+      var c1 = SPECTRUM[ls.idx % SPECTRUM.length];
+      if (ls.transitioning && ls.nextIdx !== undefined) {
+        var c2 = SPECTRUM[ls.nextIdx % SPECTRUM.length];
+        var t  = ls.t;
+        var r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+        var g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+        var b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+        buildSprite(r, g, b);
+      } else if (ls.idx !== lastSpriteIdx) {
+        buildSprite(c1[0], c1[1], c1[2]);
+        lastSpriteIdx = ls.idx;
       }
-      requestAnimationFrame(syncParticleColor);
     }
-    requestAnimationFrame(syncParticleColor);
 
-    /* â”€â”€ Particle arrays (typed for speed) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-    var N   = 3000;
-    var px  = new Float32Array(N);   // current x
-    var py  = new Float32Array(N);   // current y
-    var tx  = new Float32Array(N);   // target x
-    var ty  = new Float32Array(N);   // target y
-    var spd = new Float32Array(N);   // individual lerp speed (variety)
-    var alf = new Float32Array(N);   // individual alpha
+    /* Particle pool — small, slow, very transparent */
+    var N   = 480;
+    var px  = new Float32Array(N);
+    var py  = new Float32Array(N);
+    var vx  = new Float32Array(N);
+    var vy  = new Float32Array(N);
+    var alf = new Float32Array(N);
 
     for (var i = 0; i < N; i++) {
-      px[i]  = Math.random() * 1400;
-      py[i]  = Math.random() * 800;
-      spd[i] = 0.025 + Math.random() * 0.030; // ~0.025â€“0.055 per frame
-      alf[i] = 0.20 + Math.random() * 0.38;   // max ~0.58 â€” text always wins
+      px[i]  = Math.random() * 1600;
+      py[i]  = Math.random() * 900;
+      var angle = Math.random() * Math.PI * 2;
+      var spd   = 0.08 + Math.random() * 0.14;
+      vx[i]  = Math.cos(angle) * spd;
+      vy[i]  = Math.sin(angle) * spd;
+      alf[i] = 0.06 + Math.random() * 0.13; // 0.06–0.19 max
     }
 
-    /* â”€â”€ Shape functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-       All shapes use the FULL viewport (W Ã— H).
-       A centre exclusion zone (clearW Ã— clearH) keeps particles
-       away from the headline text so it stays readable.
-       Particles that would land in the exclusion zone are pushed
-       outward to the nearest edge of that zone instead.
-    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
-    // Pushes a point outside the centre exclusion rectangle.
-    // clearW / clearH are half-widths of the exclusion zone.
-    function clearCentre(x, y) {
-      var cw = W * 0.32;   // half-width  of text zone
-      var ch = H * 0.22;   // half-height of text zone
-      var dx = x - CX, dy = y - CY;
-      if (Math.abs(dx) < cw && Math.abs(dy) < ch) {
-        // Push to whichever edge of the zone is closest
-        var ox = dx >= 0 ? cw - dx : -cw - dx;
-        var oy = dy >= 0 ? ch - dy : -ch - dy;
-        if (Math.abs(ox) < Math.abs(oy)) { x += ox; } else { y += oy; }
-      }
-      return { x: x, y: y };
-    }
-
-    // 1. Ring â€” large ring that nearly fills the viewport height
-    function shapeRing() {
-      var r = Math.min(W, H) * 0.44;
-      for (var i = 0; i < N; i++) {
-        var a  = Math.random() * Math.PI * 2;
-        var sc = (Math.random() - 0.5) * 28;
-        var pt = clearCentre(CX + (r + sc) * Math.cos(a), CY + (r + sc) * Math.sin(a));
-        tx[i] = pt.x; ty[i] = pt.y;
-      }
-    }
-
-    // 2. Sphere â€” radius scaled to viewport, pushed wide
-    function shapeSphere() {
-      var r = Math.min(W, H) * 0.42;
-      for (var i = 0; i < N; i++) {
-        var phi   = Math.acos(1 - 2 * Math.random());
-        var theta = Math.random() * Math.PI * 2;
-        var x3 = r * Math.sin(phi) * Math.cos(theta);
-        var y3 = r * Math.sin(phi) * Math.sin(theta);
-        var z3 = r * Math.cos(phi);
-        var pt = clearCentre(CX + x3 + z3 * 0.28, CY + y3 + z3 * 0.28);
-        tx[i] = pt.x; ty[i] = pt.y;
-      }
-    }
-
-    // 3. Box â€” full-viewport rectangle outline with margin
-    function shapeBox() {
-      var mx = W * 0.06, my = H * 0.10;   // edge margin
-      var bx = mx, by = my, bw = W - mx * 2, bh = H - my * 2;
-      var perim = 2 * (bw + bh);
-      for (var i = 0; i < N; i++) {
-        var t = Math.random() * perim;
-        var x, y;
-        if      (t < bw)           { x = bx + t;       y = by; }
-        else if (t < bw + bh)      { x = bx + bw;      y = by + (t - bw); }
-        else if (t < 2*bw + bh)    { x = bx + bw - (t - bw - bh); y = by + bh; }
-        else                       { x = bx;            y = by + bh - (t - 2*bw - bh); }
-        var pt = clearCentre(x + (Math.random()-0.5)*12, y + (Math.random()-0.5)*12);
-        tx[i] = pt.x; ty[i] = pt.y;
-      }
-    }
-
-    // 4. Helix â€” full-width sine wave with tall amplitude
-    function shapeHelix() {
-      var amp   = H * 0.36;
-      var spanX = W * 0.92;
-      for (var i = 0; i < N; i++) {
-        var t  = i / N;
-        var rx = CX - spanX / 2 + t * spanX;
-        var ry = CY + Math.sin(t * Math.PI * 6) * amp + (Math.random()-0.5)*10;
-        var pt = clearCentre(rx, ry);
-        tx[i] = pt.x; ty[i] = pt.y;
-      }
-    }
-
-    // 5. Galaxy â€” three spiral arms across the full canvas
-    function shapeGalaxy() {
-      var maxR = Math.min(W, H) * 0.48;
-      for (var i = 0; i < N; i++) {
-        var arm   = (Math.random() * 3) | 0;
-        var t     = Math.random();
-        var r     = t * maxR;
-        var angle = t * Math.PI * 4 + (arm / 3) * Math.PI * 2;
-        var pt = clearCentre(CX + r * Math.cos(angle) + (Math.random()-0.5)*14,
-                             CY + r * Math.sin(angle) + (Math.random()-0.5)*14);
-        tx[i] = pt.x; ty[i] = pt.y;
-      }
-    }
-
-    // 6. DNA â€” two interleaved helices, full width, tall amplitude
-    function shapeDNA() {
-      var amp   = H * 0.28;
-      var spanX = W * 0.90;
-      var half  = N >> 1;
-      for (var i = 0; i < N; i++) {
-        var t     = i / N;
-        var phase = i < half ? 0 : Math.PI;
-        var rx = CX - spanX / 2 + t * spanX;
-        var ry = CY + Math.sin(t * Math.PI * 8 + phase) * amp + (Math.random()-0.5)*6;
-        var pt = clearCentre(rx, ry);
-        tx[i] = pt.x; ty[i] = pt.y;
-      }
-    }
-
-    var shapes   = [shapeRing, shapeSphere, shapeBox, shapeHelix, shapeGalaxy, shapeDNA];
-    var shapeIdx = 0;
-
-    function applyShape() {
-      shapes[shapeIdx]();
-    }
-    applyShape(); // load first shape targets before first frame
-
-    /* â”€â”€ Mouse parallax â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-    var mouseX = 0, mouseY = 0;
-    window.addEventListener('mousemove', function (e) {
-      mouseX = e.clientX - CX;
-      mouseY = e.clientY - CY;
-    });
-
-    /* â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-    var MORPH_MS  = 4200;                   // ms between shape changes
-    var lastMorph = performance.now();
-
-    function frame(now) {
+    function frame() {
       requestAnimationFrame(frame);
 
-      // Advance shape on schedule
-      if (now - lastMorph > MORPH_MS) {
-        shapeIdx = (shapeIdx + 1) % shapes.length;
-        applyShape();
-        lastMorph = now;
-      }
+      syncColor();
+      ctx.clearRect(0, 0, W, H); // fully transparent — body gradient shows through
 
-      var bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-      bgGrad.addColorStop(0, "#cccccc");
-      bgGrad.addColorStop(1, "#444444");
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, W, H);
-
-      // Parallax nudge (scaled down so it stays subtle)
-      var ox = mouseX * 0.032;
-      var oy = mouseY * 0.032;
-
-      // Move each particle toward its target and stamp the glow sprite
       for (var i = 0; i < N; i++) {
-        // Lerp â€” each particle has a slightly different speed for organic feel
-        px[i] += (tx[i] + ox - px[i]) * spd[i];
-        py[i] += (ty[i] + oy - py[i]) * spd[i];
+        // Drift with very slow random walk
+        vx[i] += (Math.random() - 0.5) * 0.003;
+        vy[i] += (Math.random() - 0.5) * 0.003;
+
+        // Soft speed cap
+        var sp = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
+        if (sp > 0.22) { vx[i] *= 0.97; vy[i] *= 0.97; }
+        if (sp < 0.05) { vx[i] *= 1.08; vy[i] *= 1.08; }
+
+        px[i] += vx[i];
+        py[i] += vy[i];
+
+        // Wrap at edges
+        if (px[i] < -GS) px[i] = W + GS;
+        else if (px[i] > W + GS) px[i] = -GS;
+        if (py[i] < -GS) py[i] = H + GS;
+        else if (py[i] > H + GS) py[i] = -GS;
 
         ctx.globalAlpha = alf[i];
         ctx.drawImage(sprite, px[i] - GR, py[i] - GR);
       }
-
       ctx.globalAlpha = 1;
     }
 
@@ -689,40 +1018,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
