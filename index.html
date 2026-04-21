@@ -1098,25 +1098,31 @@
       buildOutline();
     }
 
-    var SILHOUETTE = [
-      [310, 740,  180, 710,   90, 540,   90, 380],
-      [ 90, 380,   75, 240,  130,  90,  300,  50],
-      [300,  50,  480,  15,  680,  15,  840,  70],
-      [840,  70,  960, 150,  975, 370,  920, 500],
-      [920, 500,  890, 640,  770, 750,  600, 770],
-      [600, 770,  490, 790,  390, 770,  310, 740],
-    ];
+  // ── Brain profile — derived from actual SVG (freesvg.org/human-brain) ──
+  // SVG viewBox 0 0 6599 4284 → normalized: x/6.599−18, y/6.599+84
+  // Brain centre lands at (481,410) — matches existing mapPt, no other changes needed
+  var SILHOUETTE = [
+    [ -18, 402,  -12, 335,   18, 268,   33, 253],  // frontal left face (up)
+    [  33, 253,   90, 185,  290,  82,  407,  87],  // frontal top → parietal
+    [ 407,  87,  555,  75,  740, 145,  837, 246],  // parietal superior surface
+    [ 837, 246,  950, 290, 1000, 430,  981, 553],  // occipital (right bulge)
+    [ 981, 553, 1000, 640,  940, 715,  859, 733],  // lower occipital
+    [ 859, 733,  745, 750,  555, 745,  435, 720],  // temporal base (right)
+    [ 435, 720,  370, 712,  295, 698,  223, 683],  // temporal base (left)
+    [ 223, 683,  165, 655,   15, 530,  -18, 402],  // frontal lower face
+  ];
 
-    var GYRI = [
-      [145, 510,  340, 472,  550, 465,  720, 478],
-      [370,  65,  412, 210,  440, 378,  465, 510],
-      [200,  92,  268, 182,  318, 302,  355, 420],
-      [422,  70,  462, 200,  490, 348,  510, 465],
-      [490,  78,  592, 162,  680, 270,  720, 378],
-      [220, 612,  420, 592,  600, 582,  748, 578],
-      [808, 165,  870, 290,  900, 400,  910, 490],
-      [148, 330,  218, 342,  298, 368,  352, 410],
-    ];
+  // Sulci positions derived from fil1 path in the same SVG
+  var GYRI = [
+    [  73, 387,  280, 358,  520, 352,  739, 365],  // Sylvian fissure — dominant horizontal crease
+    [ 315, 114,  328, 210,  338, 305,  346, 387],  // central sulcus
+    [  57, 190,  100, 185,  165, 188,  209, 205],  // superior frontal sulcus
+    [  27, 296,  100, 302,  165, 314,  209, 326],  // inferior frontal sulcus
+    [ 361, 114,  374, 210,  388, 305,  406, 387],  // post-central sulcus
+    [ 467, 114,  548, 155,  650, 238,  739, 357],  // intraparietal sulcus
+    [  73, 478,  275, 458,  510, 452,  739, 460],  // superior temporal sulcus
+    [ 891, 160,  912, 270,  928, 425,  922, 539],  // occipital sulcus
+  ];
 
     function sampleCubic(seg, spacingU) {
       var p0x=seg[0], p0y=seg[1], c1x=seg[2], c1y=seg[3],
@@ -1145,7 +1151,7 @@
 
     function mapPt(nx, ny) {
       var s = Math.min(W, H) * 0.85 / 1000;
-      return [nx * s + W * 0.50 - 505 * s,
+      return [nx * s + W * 0.50 - 481 * s,
               ny * s + H * 0.50 - 410 * s];
     }
 
