@@ -870,7 +870,7 @@
        Replaced by real animations in Steps 2–4.
     ─────────────────────────────────────────────────────────── */
     var cardCfg = [
-      { id: 'canvas-brain', top: '#0a1428', bot: '#040810' },
+      /* canvas-brain is handled by the WebGL brain renderer below — no 2D context here */
       { id: 'canvas-tree',  top: '#0a1e0a', bot: '#040804' },
       { id: 'canvas-globe', top: '#201000', bot: '#100800' }
     ];
@@ -1081,140 +1081,432 @@
   </script>
 
   <!-- ═══════════════════════════════════════════════════════════
-       BRAIN — outline particles (Step 2a: silhouette + gyri)
+       BRAIN — Three.js GLB particle system
+       Card canvas  : canvas-brain        (8–12k particles, WebGL alpha)
+       Overlay canvas: overlay-canvas-brain (12–15k particles, fullscreen)
+       Overlay extras: 3 formula lines follow mouse (desktop only)
   ═══════════════════════════════════════════════════════════ -->
   <script>
   (function () {
     'use strict';
 
-    var canvas = document.getElementById('canvas-brain');
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
-    var W = 0, H = 0;
+    var isMobile = window.matchMedia('(max-width:768px)').matches || ('ontouchstart' in window);
 
-    function resize() {
-      W = canvas.width  = canvas.offsetWidth  || canvas.parentElement.offsetWidth  || 360;
-      H = canvas.height = canvas.offsetHeight || canvas.parentElement.offsetHeight || 320;
-      buildOutline();
+    /* ── Dynamically load three-bundle.js (local, no CDN) ─────── */
+    function loadBundle(cb) {
+      if (window.THREE && window.GLTFLoader) { cb(); return; }
+      var s = document.createElement('script');
+      s.src = 'three-bundle.js';
+      s.onload = cb;
+      s.onerror = function () { console.warn('[Brain] three-bundle.js not found'); };
+      document.head.appendChild(s);
     }
 
-  // ── Brain profile — derived from actual SVG (freesvg.org/human-brain) ──
-  // SVG viewBox 0 0 6599 4284 → normalized: x/6.599−18, y/6.599+84
-  // Brain centre lands at (481,410) — matches existing mapPt, no other changes needed
-  var SILHOUETTE = [
-    [ -18, 402,  -12, 335,   18, 268,   33, 253],  // frontal left face (up)
-    [  33, 253,   90, 185,  290,  82,  407,  87],  // frontal top → parietal
-    [ 407,  87,  555,  75,  740, 145,  837, 246],  // parietal superior surface
-    [ 837, 246,  950, 290, 1000, 430,  981, 553],  // occipital (right bulge)
-    [ 981, 553, 1000, 640,  940, 715,  859, 733],  // lower occipital
-    [ 859, 733,  745, 750,  555, 745,  435, 720],  // temporal base (right)
-    [ 435, 720,  370, 712,  295, 698,  223, 683],  // temporal base (left)
-    [ 223, 683,  165, 655,   15, 530,  -18, 402],  // frontal lower face
-  ];
+    /* ── Shared GLB — loaded once, shared by both renderers ────── */
+    var sharedGeo    = null;  // THREE.BufferGeometry (merged triangles, raw)
+    var sharedCentre = null;  // THREE.Vector3
+    var sharedScale  = 1;
+    var glbCBs       = [];
+    var glbLoading   = false;
 
-  // Sulci positions derived from fil1 path in the same SVG
-  var GYRI = [
-    [  73, 387,  280, 358,  520, 352,  739, 365],  // Sylvian fissure — dominant horizontal crease
-    [ 315, 114,  328, 210,  338, 305,  346, 387],  // central sulcus
-    [  57, 190,  100, 185,  165, 188,  209, 205],  // superior frontal sulcus
-    [  27, 296,  100, 302,  165, 314,  209, 326],  // inferior frontal sulcus
-    [ 361, 114,  374, 210,  388, 305,  406, 387],  // post-central sulcus
-    [ 467, 114,  548, 155,  650, 238,  739, 357],  // intraparietal sulcus
-    [  73, 478,  275, 458,  510, 452,  739, 460],  // superior temporal sulcus
-    [ 891, 160,  912, 270,  928, 425,  922, 539],  // occipital sulcus
-  ];
+    function getGLB(cb) {
+      if (sharedGeo) { cb(sharedGeo, sharedCentre, sharedScale); return; }
+      glbCBs.push(cb);
+      if (glbLoading) return;
+      glbLoading = true;
+      new window.GLTFLoader().load('Brain.glb', function (gltf) {
+        var all = [];
+        gltf.scene.traverse(function (obj) {
+          if (!obj.isMesh) return;
+          var g = obj.geometry.clone();
+          g.applyMatrix4(obj.matrixWorld);
+          var gi = g.index ? g.toNonIndexed() : g;
+          var p  = gi.attributes.position;
+          for (var i = 0; i < p.count; i++) all.push(p.getX(i), p.getY(i), p.getZ(i));
+          gi.dispose(); g.dispose();
+        });
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(all), 3));
+        geo.computeBoundingBox();
+        var cen = new THREE.Vector3(), sz = new THREE.Vector3();
+        geo.boundingBox.getCenter(cen);
+        geo.boundingBox.getSize(sz);
+        sharedGeo    = geo;
+        sharedCentre = cen;
+        sharedScale  = 1.8 / Math.max(sz.x, sz.y, sz.z);
+        glbCBs.forEach(function (fn) { fn(sharedGeo, sharedCentre, sharedScale); });
+        glbCBs = [];
+      }, undefined, function (e) { console.error('[Brain] GLB load failed', e); });
+    }
 
-    function sampleCubic(seg, spacingU) {
-      var p0x=seg[0], p0y=seg[1], c1x=seg[2], c1y=seg[3],
-          c2x=seg[4], c2y=seg[5], p1x=seg[6], p1y=seg[7];
-      var STEPS = 120;
-      var xs = new Float32Array(STEPS), ys = new Float32Array(STEPS);
-      for (var i = 0; i < STEPS; i++) {
-        var t = (i + 1) / STEPS, mt = 1 - t;
-        xs[i] = mt*mt*mt*p0x + 3*mt*mt*t*c1x + 3*mt*t*t*c2x + t*t*t*p1x;
-        ys[i] = mt*mt*mt*p0y + 3*mt*mt*t*c1y + 3*mt*t*t*c2y + t*t*t*p1y;
+    /* ── Area-weighted surface sampler ─────────────────────────── */
+    function sampleSurface(geo, N, centre, scale) {
+      var A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3();
+      var e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), cx = new THREE.Vector3();
+      var pos = geo.attributes.position;
+      var T   = Math.floor(pos.count / 3);
+
+      var areas = new Float64Array(T), total = 0;
+      for (var i = 0; i < T; i++) {
+        A.fromBufferAttribute(pos, i*3);
+        B.fromBufferAttribute(pos, i*3+1);
+        C.fromBufferAttribute(pos, i*3+2);
+        e1.subVectors(B, A); e2.subVectors(C, A);
+        cx.crossVectors(e1, e2);
+        var a = cx.length() * 0.5;
+        areas[i] = a; total += a;
       }
-      var pts = [[p0x, p0y]];
-      var dist = 0, next = spacingU, px = p0x, py = p0y;
-      for (var j = 0; j < STEPS; j++) {
-        var d = Math.sqrt((xs[j]-px)*(xs[j]-px) + (ys[j]-py)*(ys[j]-py));
-        dist += d;
-        while (dist >= next) {
-          var frac = 1 - (dist - next) / d;
-          pts.push([px + (xs[j]-px)*frac, py + (ys[j]-py)*frac]);
-          next += spacingU;
+      var cdf = new Float64Array(T), acc = 0;
+      for (var j = 0; j < T; j++) { acc += areas[j] / total; cdf[j] = acc; }
+
+      var out = new Float32Array(N * 3);
+      for (var s = 0; s < N; s++) {
+        var lo = 0, hi = T - 1, r = Math.random();
+        while (lo < hi) { var mid = (lo + hi) >> 1; if (cdf[mid] < r) lo = mid + 1; else hi = mid; }
+        A.fromBufferAttribute(pos, lo*3);
+        B.fromBufferAttribute(pos, lo*3+1);
+        C.fromBufferAttribute(pos, lo*3+2);
+        var u = Math.random(), v = Math.random();
+        if (u + v > 1) { u = 1 - u; v = 1 - v; }
+        out[s*3]   = (A.x + u*(B.x-A.x) + v*(C.x-A.x) - centre.x) * scale;
+        out[s*3+1] = (A.y + u*(B.y-A.y) + v*(C.y-A.y) - centre.y) * scale;
+        out[s*3+2] = (A.z + u*(B.z-A.z) + v*(C.z-A.z) - centre.z) * scale;
+      }
+      return out;
+    }
+
+    /* ── Shared shader source ───────────────────────────────────── */
+    var VERT = [
+      'uniform vec2  uMouse;',
+      'uniform float uRadius;',
+      'varying float vBright;',
+      'void main() {',
+      '  vec4  clip = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+      '  vec2  ndc  = clip.xy / clip.w;',
+      '  float dist = length(ndc - uMouse);',
+      '  vBright = max(0.0, 1.0 - dist / uRadius);',
+      '  float sz = (6.0 + vBright * 3.0) * (3.0 / clip.w);',
+      '  gl_PointSize = clamp(sz, 2.5, 20.0);',
+      '  gl_Position  = clip;',
+      '}'
+    ].join('\n');
+
+    var FRAG = [
+      'uniform vec3  uColor;',
+      'varying float vBright;',
+      'void main() {',
+      '  vec2  c = gl_PointCoord - 0.5;',
+      '  float r = length(c) * 2.0;',
+      '  if (r > 1.0) discard;',
+      '  float alpha = pow(1.0 - r, 1.2);',
+      '  vec3  bright = uColor * 2.2;',
+      '  vec3  col    = mix(bright, vec3(1.0), vBright * 0.24);',
+      '  col += pow(1.0 - r, 3.5) * 0.36;',
+      '  gl_FragColor = vec4(col, alpha);',
+      '}'
+    ].join('\n');
+
+    /* ════════════════════════════════════════════════════════════
+       CARD BRAIN — canvas-brain
+    ════════════════════════════════════════════════════════════ */
+    function initCard() {
+      var canvas = document.getElementById('canvas-brain');
+      if (!canvas) return;
+
+      var N   = window.HeliuxPerf ? window.HeliuxPerf.getCount(12000, 8000, 5000) : 8000;
+      var THR = window.THREE;
+
+      var renderer = new THR.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setClearColor(0x000000, 0);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+      var scene  = new THR.Scene();
+      var camera = new THR.PerspectiveCamera(50, 1, 0.01, 100);
+      camera.position.set(0, 0, 3);
+
+      function resizeCard() {
+        var w = canvas.offsetWidth  || (canvas.parentElement && canvas.parentElement.offsetWidth)  || 360;
+        var h = canvas.offsetHeight || (canvas.parentElement && canvas.parentElement.offsetHeight) || 320;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+      }
+      resizeCard();
+      // Re-measure after first paint in case layout isn't ready yet
+      requestAnimationFrame(resizeCard);
+      window.addEventListener('resize', resizeCard);
+
+      var uMouse = new THR.Vector2(-9, -9);
+      var mat = new THR.ShaderMaterial({
+        transparent: true, depthWrite: false,
+        blending: THR.AdditiveBlending,
+        uniforms: {
+          uMouse:  { value: uMouse },
+          uColor:  { value: new THR.Color('#4a9edd') },
+          uRadius: { value: 0.28 }
+        },
+        vertexShader:   VERT,
+        fragmentShader: FRAG
+      });
+
+      var group = new THR.Group();
+      scene.add(group);
+
+      getGLB(function (geo, cen, sc) {
+        var pts   = sampleSurface(geo, N, cen, sc);
+        var ptGeo = new THR.BufferGeometry();
+        ptGeo.setAttribute('position', new THR.BufferAttribute(pts, 3));
+        group.add(new THR.Points(ptGeo, mat));
+      });
+
+      (function loopCard() {
+        requestAnimationFrame(loopCard);
+        group.rotation.y += 0.003;
+        var rect = canvas.getBoundingClientRect();
+        var mo   = window.HeliuxMouse || { x: -9999, y: -9999 };
+        uMouse.x =  ((mo.x - rect.left) / (rect.width  || 1)) * 2 - 1;
+        uMouse.y = -((mo.y - rect.top)  / (rect.height || 1)) * 2 + 1;
+        renderer.render(scene, camera);
+      }());
+    }
+
+    /* ════════════════════════════════════════════════════════════
+       OVERLAY BRAIN — overlay-canvas-brain + formula lines
+    ════════════════════════════════════════════════════════════ */
+    var FORMULAS = [
+      '∂L/∂w',       // backpropagation weight gradient
+      'σ(z)=1/(1+e⁻ᶻ)', // sigmoid activation
+      'ŷ=Wx+b',      // linear layer forward pass
+      'KL(P‖Q)',     // KL divergence (VAE / information theory)
+      'E=mc²',       // mass-energy equivalence
+      '∇²φ=ρ/ε₀',   // Poisson / Gauss electric field
+      'H(X)=−∑p logp', // Shannon entropy
+      'Attention(Q,K,V)', // transformer attention
+    ];
+
+    function initOverlay() {
+      var canvas  = document.getElementById('overlay-canvas-brain');
+      var overlay = document.getElementById('overlay-brain');
+      if (!canvas || !overlay) return;
+
+      var N   = window.HeliuxPerf ? window.HeliuxPerf.getCount(15000, 12000, 8000) : 12000;
+      var THR = window.THREE;
+
+      /* Three.js renderer */
+      var renderer = new THR.WebGLRenderer({ canvas: canvas, antialias: true });
+      renderer.setClearColor(0x050e20, 1);
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+      var scene  = new THR.Scene();
+      var camera = new THR.PerspectiveCamera(50, 1, 0.01, 100);
+      camera.position.set(0, 0, 3);
+
+      /* 2D line canvas — desktop only, appended via JS (no HTML change) */
+      var lineCanvas = null, lctx = null;
+      if (!isMobile) {
+        lineCanvas = document.createElement('canvas');
+        lineCanvas.style.cssText =
+          'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+        overlay.appendChild(lineCanvas);
+        lctx = lineCanvas.getContext('2d');
+      }
+
+      function resizeOverlay() {
+        var w = window.innerWidth, h = window.innerHeight;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        if (lineCanvas) { lineCanvas.width = w; lineCanvas.height = h; }
+      }
+      resizeOverlay();
+      window.addEventListener('resize', resizeOverlay);
+
+      var uMouse = new THR.Vector2(-9, -9);
+      var mat = new THR.ShaderMaterial({
+        transparent: true, depthWrite: false,
+        blending: THR.AdditiveBlending,
+        uniforms: {
+          uMouse:  { value: uMouse },
+          uColor:  { value: new THR.Color('#4a9edd') },
+          uRadius: { value: 0.28 }
+        },
+        vertexShader:   VERT,
+        fragmentShader: FRAG
+      });
+
+      var group = new THR.Group();
+      scene.add(group);
+
+      /* Particle data stored for anchor picking */
+      var pts = null;
+
+      getGLB(function (geo, cen, sc) {
+        pts = sampleSurface(geo, N, cen, sc);
+        var ptGeo = new THR.BufferGeometry();
+        ptGeo.setAttribute('position', new THR.BufferAttribute(pts, 3));
+        group.add(new THR.Points(ptGeo, mat));
+        /* seed anchors once particles exist */
+        for (var k = 0; k < 3; k++) {
+          var ii = Math.floor(Math.random() * (pts.length / 3));
+          anchors[k].wx = pts[ii*3];
+          anchors[k].wy = pts[ii*3+1];
+          anchors[k].wz = pts[ii*3+2];
+          anchors[k].ni = Math.floor(Math.random() * (pts.length / 3));
+          anchors[k].formula = FORMULAS[Math.floor(Math.random() * FORMULAS.length)];
         }
-        px = xs[j]; py = ys[j];
-      }
-      return pts;
-    }
-
-    function mapPt(nx, ny) {
-      var s = Math.min(W, H) * 0.85 / 1000;
-      return [nx * s + W * 0.50 - 481 * s,
-              ny * s + H * 0.50 - 410 * s];
-    }
-
-    var particles = [];
-
-    function buildOutline() {
-      particles = [];
-      var s = Math.min(W, H) * 0.85 / 1000;
-      var spacingU = 4 / s;
-
-      SILHOUETTE.forEach(function (seg) {
-        sampleCubic(seg, spacingU).forEach(function (pt) {
-          var m = mapPt(pt[0], pt[1]);
-          particles.push({ tx: m[0], ty: m[1], x: m[0], y: m[1],
-            phase: Math.random() * Math.PI * 2, type: 'sil',
-            a: 0.82 + Math.random() * 0.12 });
-        });
       });
 
-      GYRI.forEach(function (seg) {
-        sampleCubic(seg, spacingU * 1.6).forEach(function (pt) {
-          var m = mapPt(pt[0], pt[1]);
-          particles.push({ tx: m[0], ty: m[1], x: m[0], y: m[1],
-            phase: Math.random() * Math.PI * 2, type: 'gyrus',
-            a: 0.35 + Math.random() * 0.18 });
-        });
+      /* ── Formula-line anchors (3 drifting surface points) ──── */
+      var t0 = performance.now();
+      var anchors = [0, 1, 2].map(function (k) {
+        return { wx: 0, wy: 0, wz: 0, ni: 0,
+                 formula: FORMULAS[k], lastShift: t0 + k * 1800 };
       });
+
+      /* Mouse state for the overlay */
+      var overlayActive = false;
+      var rawMX = -9999, rawMY = -9999;
+      var smMX  = -9999, smMY  = -9999;
+      var mouseIn   = false;
+      var labelFade = 0;
+      var projVec   = new THR.Vector3();
+
+      overlay.addEventListener('mousemove', function (e) {
+        rawMX = e.clientX; rawMY = e.clientY; mouseIn = true;
+      });
+      overlay.addEventListener('mouseleave', function () { mouseIn = false; });
+
+      /* Watch the active class so we know when overlay opens / closes */
+      new MutationObserver(function () {
+        overlayActive = overlay.classList.contains('active');
+        if (!overlayActive) { mouseIn = false; }
+      }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+
+      /* ── Main render loop ────────────────────────────────────── */
+      (function loopOverlay(now) {
+        requestAnimationFrame(loopOverlay);
+
+        var elapsed = (now - t0) * 0.001;
+
+        group.rotation.y += 0.003;
+
+        /* Particle glow follows mouse when overlay is open */
+        if (overlayActive && mouseIn) {
+          uMouse.x =  (rawMX / window.innerWidth)  * 2 - 1;
+          uMouse.y = -(rawMY / window.innerHeight) * 2 + 1;
+        } else {
+          uMouse.set(-9, -9);
+        }
+
+        renderer.render(scene, camera);
+
+        /* ── Formula lines — desktop + overlay active only ──── */
+        if (isMobile || !overlayActive || !lctx || !pts) return;
+
+        /* Smooth mouse lerp */
+        smMX += (rawMX - smMX) * 0.12;
+        smMY += (rawMY - smMY) * 0.12;
+
+        /* Fade label alpha — always at least 0.55 so formulas stay visible */
+        labelFade = Math.min(1, Math.max(0.55, labelFade + (mouseIn ? 0.045 : -0.02)));
+
+        /* Drift anchors to new surface positions every ~5 s */
+        for (var ai = 0; ai < 3; ai++) {
+          var anc = anchors[ai];
+          if (now - anc.lastShift > 5000) {
+            anc.ni        = Math.floor(Math.random() * (pts.length / 3));
+            anc.formula   = FORMULAS[Math.floor(Math.random() * FORMULAS.length)];
+            anc.lastShift = now;
+          }
+          var tx = pts[anc.ni*3], ty = pts[anc.ni*3+1], tz = pts[anc.ni*3+2];
+          anc.wx += (tx - anc.wx) * 0.004;
+          anc.wy += (ty - anc.wy) * 0.004;
+          anc.wz += (tz - anc.wz) * 0.004;
+        }
+
+        var W = lineCanvas.width, H = lineCanvas.height;
+        lctx.clearRect(0, 0, W, H);
+        if (labelFade < 0.01) return;
+
+        for (var ai = 0; ai < 3; ai++) {
+          var anc = anchors[ai];
+
+          /* Project anchor world-pos → screen via Three.js */
+          group.updateMatrixWorld(false);
+          projVec.set(anc.wx, anc.wy, anc.wz);
+          projVec.applyMatrix4(group.matrixWorld);
+          projVec.project(camera);
+          if (projVec.z > 1) continue; /* behind near plane */
+
+          var sx = ( projVec.x * 0.5 + 0.5) * W;
+          var sy = (-projVec.y * 0.5 + 0.5) * H;
+
+          /* Per-line pulse for flicker feel */
+          var pulse = 0.62 + 0.38 * Math.sin(elapsed * 3.8 + ai * 2.09);
+          var fa    = labelFade * pulse;
+
+          /* Glow halo */
+          lctx.save();
+          lctx.globalAlpha = fa * 0.32;
+          lctx.strokeStyle = '#4a9eff';
+          lctx.lineWidth   = 3;
+          lctx.shadowColor = '#4a9eff';
+          lctx.shadowBlur  = 16;
+          lctx.beginPath(); lctx.moveTo(sx, sy); lctx.lineTo(smMX, smMY); lctx.stroke();
+          lctx.restore();
+
+          /* Inner sharp line */
+          lctx.save();
+          lctx.globalAlpha = fa * 0.72;
+          lctx.strokeStyle = '#a8d8ff';
+          lctx.lineWidth   = 0.85;
+          lctx.beginPath(); lctx.moveTo(sx, sy); lctx.lineTo(smMX, smMY); lctx.stroke();
+          lctx.restore();
+
+          /* Anchor dot */
+          lctx.save();
+          lctx.globalAlpha = fa * 0.9;
+          lctx.fillStyle   = '#4a9eff';
+          lctx.shadowColor = '#4a9eff';
+          lctx.shadowBlur  = 10;
+          lctx.beginPath(); lctx.arc(sx, sy, 2.5, 0, 6.283); lctx.fill();
+          lctx.restore();
+
+          /* Formula text — placed 80% along line toward cursor, in clear space */
+          var tx2 = sx + (smMX - sx) * 0.80;
+          var ty2 = sy + (smMY - sy) * 0.80;
+          lctx.save();
+          lctx.font = 'bold 16px "SF Mono","Fira Code","Courier New",monospace';
+          lctx.textAlign = 'center';
+          var tw  = lctx.measureText(anc.formula).width;
+          var pad = 10;
+          /* Solid dark background rect — always visible */
+          lctx.globalAlpha = 1.0;
+          lctx.shadowBlur  = 0;
+          lctx.shadowColor = 'transparent';
+          lctx.fillStyle   = '#020816';
+          lctx.fillRect(tx2 - tw * 0.5 - pad, ty2 - 16, tw + pad * 2, 24);
+          /* Blue border */
+          lctx.strokeStyle = '#4a9eff';
+          lctx.lineWidth   = 1;
+          lctx.strokeRect(tx2 - tw * 0.5 - pad, ty2 - 16, tw + pad * 2, 24);
+          /* White text with blue glow */
+          lctx.shadowColor = '#4a9eff';
+          lctx.shadowBlur  = 12;
+          lctx.fillStyle   = '#ffffff';
+          lctx.fillText(anc.formula, tx2, ty2);
+          lctx.textAlign   = 'left';
+          lctx.restore();
+        }
+      }(t0));
     }
 
-    var t0 = performance.now();
+    /* ── Boot ─────────────────────────────────────────────────── */
+    loadBundle(function () {
+      initCard();
+      initOverlay();
+    });
 
-    function frame(now) {
-      requestAnimationFrame(frame);
-      ctx.clearRect(0, 0, W, H);
-
-      var elapsed = (now - t0) * 0.001;
-      var mo = window.HeliuxMouse || { x: -9999, y: -9999 };
-      var r  = canvas.getBoundingClientRect();
-      var mx = mo.x - r.left, my = mo.y - r.top;
-
-      for (var i = 0; i < particles.length; i++) {
-        var p = particles[i];
-        var dx = p.tx - W * 0.50, dy = p.ty - H * 0.50;
-        var len = Math.sqrt(dx*dx + dy*dy) || 1;
-        var osc = Math.sin(elapsed * 0.75 + p.phase) * 1.8;
-        p.x = p.tx + (dx / len) * osc;
-        p.y = p.ty + (dy / len) * osc;
-
-        var md = Math.sqrt((p.x-mx)*(p.x-mx) + (p.y-my)*(p.y-my));
-        var bloom = md < 120 ? (1 - md / 120) * 0.38 : 0;
-
-        ctx.globalAlpha = Math.min(1, p.a + bloom);
-        ctx.fillStyle   = p.type === 'sil' ? '#7ab8ff' : '#4a9eff';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.type === 'sil' ? 1.3 : 0.9, 0, 6.283);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    resize();
-    window.addEventListener('resize', resize);
-    requestAnimationFrame(frame);
   }());
   </script>
 

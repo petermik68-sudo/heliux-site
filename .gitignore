@@ -1,0 +1,12 @@
+# Dev / test files
+test-brain.html
+test-threejs.html
+brain-widget.html
+
+# Claude Code local settings
+.claude/settings.local.json
+.claude/launch.json
+
+# OS
+.DS_Store
+Thumbs.db
